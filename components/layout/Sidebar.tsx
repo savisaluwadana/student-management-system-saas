@@ -18,7 +18,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-white">
+    <div className="flex h-full w-64 flex-col border-r bg-background">
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
           {navigation.map((item) => {

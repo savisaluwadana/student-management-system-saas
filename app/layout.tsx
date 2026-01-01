@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Student Management System",
@@ -13,10 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {children}
-        <Toaster />
+        <ThemeProvider defaultTheme="system" storageKey="sms-theme">
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export function Navbar() {
   const router = useRouter();
@@ -23,12 +24,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b bg-white">
+    <nav className="border-b bg-background">
       <div className="flex h-16 items-center px-4 md:px-6">
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-xl font-bold">Student Management System</span>
         </Link>
-        <div className="ml-auto flex items-center space-x-4">
+        <div className="ml-auto flex items-center space-x-2">
+          <ThemeToggle />
           <Button variant="ghost" size="icon">
             <User className="h-5 w-5" />
           </Button>
