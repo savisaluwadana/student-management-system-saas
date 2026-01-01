@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { Users, BookOpen, DollarSign, MessageSquare, Settings } from 'lucide-react';
+import { Users, BookOpen, ClipboardCheck, DollarSign, MessageSquare, Settings } from 'lucide-react';
 
 const navigation = [
   { name: 'Students', href: '/students', icon: Users },
   { name: 'Classes', href: '/classes', icon: BookOpen },
+  { name: 'Attendance', href: '/attendance', icon: ClipboardCheck },
   { name: 'Payments', href: '/payments', icon: DollarSign },
   { name: 'Communications', href: '/communications', icon: MessageSquare },
   { name: 'Settings', href: '/settings', icon: Settings },
