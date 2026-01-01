@@ -276,5 +276,7 @@ For issues and questions:
 - Vercel for hosting platform
 
 ---
-
+docker commands
+docker build -t student-management-system .
+docker run -p 3000:3000 student-management-system
 Built with ❤️ using Next.js 14, TypeScript, and Supabase
