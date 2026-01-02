@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils/formatters';
+import { formatCurrency } from '@/lib/utils';
 
 export default async function ClassesPage() {
   const classes = await getClasses();

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils/formatters';
+import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,7 +28,7 @@ export function StudentTable({ students }: StudentTableProps) {
 
     setDeletingId(id);
     const result = await deleteStudent(id);
-    
+
     if (result.success) {
       toast({
         title: 'Success',

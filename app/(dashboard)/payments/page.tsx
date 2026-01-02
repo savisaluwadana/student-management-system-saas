@@ -3,7 +3,7 @@ import { getDashboardStats } from '@/lib/actions/payments';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 export default async function PaymentsPage() {
   const payments = await getPayments();

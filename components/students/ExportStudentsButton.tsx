@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { getAllStudentsForExport } from '@/lib/actions/students';
-import { toCSV, downloadCSV } from '@/lib/utils/csv';
+import { toCSV, downloadCSV } from '@/lib/utils';
 
 export function ExportStudentsButton() {
     const [exporting, setExporting] = useState(false);

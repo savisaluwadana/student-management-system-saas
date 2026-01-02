@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { FileUpload } from '@/components/ui/file-upload';
-import { parseCSV, validateStudentRow, STUDENT_CSV_HEADERS, downloadCSV } from '@/lib/utils/csv';
+import { parseCSV, validateStudentRow, STUDENT_CSV_HEADERS, downloadCSV } from '@/lib/utils';
 import { bulkCreateStudents } from '@/lib/actions/students';
 import { ArrowLeft, Download, Upload, Check, X, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
