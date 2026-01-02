@@ -85,9 +85,8 @@ export function PaymentForm() {
             // We might need to implement getAllStudents or similar efficient search
             // For now assuming we can fetch basic list. Ideally this should be server-side searched in Command
             try {
-                // Mocking fetching students if action doesn't strictly exist or import fails. 
-                // In real app, import { getAllStudents } from ...
-                const res = await getAllStudents();
+                // Fetch students directly
+                const res = await getStudents();
                 setStudents(res);
             } catch (e) {
                 console.error("Failed to load students", e)
@@ -106,7 +105,7 @@ export function PaymentForm() {
                 payment_month: values.payment_month.toISOString(), // simplified for now
                 due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(), // End of current month default
                 status: "paid", // Automatically mark as paid for manual entry
-                payment_method: values.payment_method,
+                payment_method: values.payment_method as any,
                 payment_date: new Date().toISOString(),
                 notes: values.notes,
             })
@@ -153,7 +152,7 @@ export function PaymentForm() {
                         <FormField
                             control={form.control}
                             name="student_id"
-                            render={({ field }) => (
+                            render={({ field }: { field: any }) => (
                                 <FormItem className="flex flex-col">
                                     <FormLabel>Student</FormLabel>
                                     <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
@@ -212,7 +211,7 @@ export function PaymentForm() {
                             <FormField
                                 control={form.control}
                                 name="amount"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Amount</FormLabel>
                                         <FormControl>
@@ -225,7 +224,7 @@ export function PaymentForm() {
                             <FormField
                                 control={form.control}
                                 name="payment_method"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Method</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -251,7 +250,7 @@ export function PaymentForm() {
                         <FormField
                             control={form.control}
                             name="payment_month"
-                            render={({ field }) => (
+                            render={({ field }: { field: any }) => (
                                 <FormItem className="flex flex-col">
                                     <FormLabel>Payment Month</FormLabel>
                                     <Popover>
@@ -278,7 +277,7 @@ export function PaymentForm() {
                                                 mode="single"
                                                 selected={field.value}
                                                 onSelect={field.onChange}
-                                                disabled={(date) =>
+                                                disabled={(date: Date) =>
                                                     date > new Date() || date < new Date("1900-01-01")
                                                 }
                                                 initialFocus
@@ -295,7 +294,7 @@ export function PaymentForm() {
                         <FormField
                             control={form.control}
                             name="notes"
-                            render={({ field }) => (
+                            render={({ field }: { field: any }) => (
                                 <FormItem>
                                     <FormLabel>Notes (Optional)</FormLabel>
                                     <FormControl>

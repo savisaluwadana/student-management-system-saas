@@ -1,9 +1,9 @@
-import { getPayments } from '@/lib/actions/payments';
-import { getDashboardStats } from '@/lib/actions/payments';
+import { getPayments, getDashboardStats } from '@/lib/actions/payments';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { PaymentForm } from '@/components/payments/PaymentForm';
 
 export default async function PaymentsPage() {
   const payments = await getPayments();
@@ -12,7 +12,7 @@ export default async function PaymentsPage() {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'paid':
-        return 'default';
+        return 'default'; // default in shadcn is usually black/primary
       case 'unpaid':
         return 'secondary';
       case 'overdue':
@@ -25,74 +25,111 @@ export default async function PaymentsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Payments</h1>
-        <p className="text-muted-foreground">Manage student fee payments</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+            Payments
+          </h1>
+          <p className="text-muted-foreground mt-1 text-lg">
+            Manage tuition fees and financial records
+          </p>
+        </div>
+        <PaymentForm />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Total Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(stats.totalRevenue)}
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Payments
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.pendingPayments)}</div>
+            <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              {formatCurrency(stats.pendingPayments)}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-none shadow-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg ring-1 ring-black/5 dark:ring-white/10">
         <CardHeader>
-          <CardTitle>Recent Payments</CardTitle>
+          <CardTitle className="text-xl">Recent Transactions</CardTitle>
           <CardDescription>
-            Latest payment transactions
+            A list of all recent fee payments and transactions
           </CardDescription>
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">No payments found</p>
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                <span className="text-2xl">💰</span>
+              </div>
+              <h3 className="text-lg font-medium">No payments found</h3>
+              <p className="text-muted-foreground mt-1">
+                Record a payment to get started.
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.slice(0, 10).map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>{payment.student_id.slice(0, 8)}...</TableCell>
-                    <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                    <TableCell>{formatDate(payment.payment_month, 'MMM yyyy')}</TableCell>
-                    <TableCell>{formatDate(payment.due_date)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(payment.status)}>
-                        {payment.status}
-                      </Badge>
-                    </TableCell>
+            <div className="rounded-md border bg-white dark:bg-zinc-950">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Method</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {payments.slice(0, 10).map((payment) => (
+                    <TableRow key={payment.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(payment.status) as any} className="capitalize shadow-sm">
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {/* We might need to join student name here if not already joined in action. 
+                            Assuming action returns joined data or we use client component to fetch. 
+                            For now using ID or joined field if available. 
+                            Checking types... Action returns FeePayment which likely has student relation joined if setup.
+                            Let's assume backend returns basic info, might need enhancement later.
+                        */}
+                        <span className="font-mono text-xs text-muted-foreground mr-2">
+                          {payment.student_id ? payment.student_id.slice(0, 6) : 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-bold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(payment.amount)}
+                      </TableCell>
+                      <TableCell>{formatDate(payment.payment_month, 'MMM yyyy')}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {payment.payment_date ? formatDate(payment.payment_date) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right capitalize text-muted-foreground">
+                        {payment.payment_method?.replace('_', ' ') || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

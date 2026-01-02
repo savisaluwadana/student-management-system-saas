@@ -26,6 +26,7 @@ export interface CreatePaymentInput {
   status?: PaymentStatus;
   payment_method?: PaymentMethod;
   transaction_id?: string;
+  payment_date?: string;
   notes?: string;
 }
 
