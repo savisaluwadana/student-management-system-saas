@@ -3,76 +3,61 @@ import { OverviewChart } from "@/components/dashboard/OverviewChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, GraduationCap, ArrowUpRight, Activity } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
     const data = await getDashboardData();
 
     return (
-        <div className="flex-1 space-y-8 p-4 pt-6 animate-in fade-in duration-500">
+        <div className="flex-1 space-y-8 p-4 pt-6 animate-in fade-in duration-500 bg-transparent">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+                <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent dark:from-white dark:to-gray-400 drop-shadow-sm">
                     Dashboard
                 </h2>
+                <div className="flex items-center space-x-2">
+                    {/* Date Picker or other actions could go here */}
+                </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-violet-500">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(data.totalRevenue)}</div>
-                        <p className="text-xs text-muted-foreground">
-                            +20.1% from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Students</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{data.totalStudents}</div>
-                        <p className="text-xs text-muted-foreground">
-                            +180.1% from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-emerald-500">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Classes</CardTitle>
-                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{data.activeClasses}</div>
-                        <p className="text-xs text-muted-foreground">
-                            +19% from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-amber-500">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Teachers</CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{data.totalTeachers}</div>
-                        <p className="text-xs text-muted-foreground">
-                            +201 since last hour
-                        </p>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <StatsCard
+                    title="Total Revenue"
+                    icon={DollarSign}
+                    value={formatCurrency(data.totalRevenue)}
+                    subtext="+20.1% from last month"
+                    color="text-emerald-500"
+                    trend="up"
+                />
+                <StatsCard
+                    title="Active Students"
+                    icon={Users}
+                    value={`+${data.totalStudents}`}
+                    subtext="+180.1% from last month"
+                    color="text-blue-500"
+                    trend="up"
+                />
+                <StatsCard
+                    title="Active Classes"
+                    icon={GraduationCap}
+                    value={`+${data.activeClasses}`}
+                    subtext="+19% from last month"
+                    color="text-violet-500"
+                    trend="up"
+                />
+                <StatsCard
+                    title="Teachers"
+                    icon={Activity}
+                    value={`+${data.totalTeachers}`}
+                    subtext="+201 since last hour"
+                    color="text-amber-500"
+                    trend="up"
+                />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 {/* Revenue Chart */}
-                <Card className="col-span-4 shadow-md">
+                <Card className="col-span-4 border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
                     <CardHeader>
                         <CardTitle>Revenue Overview</CardTitle>
                         <CardDescription>
@@ -85,7 +70,7 @@ export default async function DashboardPage() {
                 </Card>
 
                 {/* Recent Activity */}
-                <Card className="col-span-3 shadow-md">
+                <Card className="col-span-3 border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
                     <CardHeader>
                         <CardTitle>Recent Activity</CardTitle>
                         <CardDescription>
@@ -95,20 +80,22 @@ export default async function DashboardPage() {
                     <CardContent>
                         <div className="space-y-8">
                             {data.recentActivities.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No recent activity.</p>
+                                <p className="text-sm text-muted-foreground text-center py-10">No recent activity.</p>
                             ) : (
                                 data.recentActivities.map((activity, i) => (
-                                    <div key={activity.id || i} className="flex items-center">
-                                        <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full items-center justify-center bg-violet-100 text-violet-700 font-bold">
-                                            {activity.type === 'payment' ? '$' : activity.type === 'login' ? 'L' : 'S'}
-                                        </span>
+                                    <div key={activity.id || i} className="flex items-center group">
+                                        <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
+                                            <span className="font-bold text-violet-600 dark:text-violet-400">
+                                                {activity.type === 'payment' ? '$' : activity.type === 'login' ? 'L' : 'S'}
+                                            </span>
+                                        </div>
                                         <div className="ml-4 space-y-1">
-                                            <p className="text-sm font-medium leading-none">{activity.description}</p>
+                                            <p className="text-sm font-medium leading-none group-hover:text-violet-600 transition-colors">{activity.description}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {new Date(activity.timestamp).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <div className="ml-auto font-medium text-xs text-muted-foreground">
+                                        <div className="ml-auto font-medium text-xs text-muted-foreground whitespace-nowrap">
                                             {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
@@ -120,4 +107,27 @@ export default async function DashboardPage() {
             </div>
         </div>
     );
+}
+
+function StatsCard({ title, icon: Icon, value, subtext, color, trend }: any) {
+    return (
+        <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 group cursor-default relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Icon className="h-16 w-16" />
+            </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{title}</CardTitle>
+                <div className={cn("p-2 rounded-lg bg-gray-50 dark:bg-white/5", color.replace('text-', 'bg-').replace('500', '100') + ' dark:bg-opacity-10')}>
+                    <Icon className={cn("h-4 w-4", color)} />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-3xl font-bold tracking-tight">{value}</div>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    {trend === 'up' && <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />}
+                    {subtext}
+                </p>
+            </CardContent>
+        </Card>
+    )
 }

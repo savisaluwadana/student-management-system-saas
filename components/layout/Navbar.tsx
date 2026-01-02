@@ -24,7 +24,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b bg-background">
+    <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 md:px-6">
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-xl font-bold">Student Management System</span>
