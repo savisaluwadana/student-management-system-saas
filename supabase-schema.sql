@@ -306,8 +306,29 @@ CREATE POLICY "Users can update own profile"
   TO authenticated
   USING (auth.uid() = id);
 
-CREATE POLICY "Admins can do everything with profiles"
-  ON profiles FOR ALL
+-- FIXED: Split into separate policies to avoid infinite recursion on SELECT
+CREATE POLICY "Admins can insert profiles"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can update profiles"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can delete profiles"
+  ON profiles FOR DELETE
   TO authenticated
   USING (
     EXISTS (

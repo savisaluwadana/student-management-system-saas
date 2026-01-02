@@ -294,18 +294,18 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                                                     return (
                                                         <Button
                                                             key={status}
-                                                            variant="ghost"
-                                                            size="icon"
+                                                            variant={isSelected ? "default" : "outline"}
+                                                            size="sm"
                                                             onClick={() => handleStatusChange(student.student_id, status)}
                                                             className={cn(
-                                                                "h-9 w-9 rounded-full transition-all",
+                                                                "h-9 w-9 p-0 rounded-full transition-all border-2",
                                                                 isSelected
-                                                                    ? cn(config.bg, config.color, "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-black", config.border.replace('border-', 'ring-'))
-                                                                    : "text-muted-foreground hover:bg-muted"
+                                                                    ? cn(config.bg, config.color, "border-transparent ring-2 ring-offset-2 ring-offset-white dark:ring-offset-black")
+                                                                    : "text-muted-foreground border-muted hover:border-gray-400 hover:text-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300 bg-transparent"
                                                             )}
                                                             title={config.label}
                                                         >
-                                                            <Icon className="h-4 w-4" />
+                                                            <Icon className={cn("h-4 w-4", isSelected && "text-current")} />
                                                         </Button>
                                                     );
                                                 })}
