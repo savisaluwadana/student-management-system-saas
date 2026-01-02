@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/shared/cn';
-import { Users, BookOpen, ClipboardCheck, GraduationCap, DollarSign, MessageSquare, Settings } from 'lucide-react';
+import { Users, BookOpen, ClipboardCheck, GraduationCap, DollarSign, MessageSquare, Settings, LayoutDashboard, UserCog } from 'lucide-react';
 
 const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Students', href: '/students', icon: Users },
+  { name: 'Teachers', href: '/teachers', icon: UserCog },
   { name: 'Classes', href: '/classes', icon: BookOpen },
   { name: 'Attendance', href: '/attendance', icon: ClipboardCheck },
   { name: 'Assessments', href: '/assessments', icon: GraduationCap },
