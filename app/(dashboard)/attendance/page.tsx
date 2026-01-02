@@ -1,5 +1,6 @@
 import { getClassesForAttendance, getAttendanceStats, getTodayAttendanceSummary } from '@/lib/actions/attendance';
 import { AttendanceStats } from '@/components/attendance/AttendanceStats';
+import { AttendanceRiskWidget } from '@/components/attendance/AttendanceRiskWidget';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,8 +37,15 @@ export default async function AttendancePage() {
                 </Link>
             </div>
 
-            {/* Stats */}
-            <AttendanceStats {...stats} />
+            {/* Stats & Risk Analysis */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <AttendanceStats {...stats} />
+                </div>
+                <div>
+                    <AttendanceRiskWidget />
+                </div>
+            </div>
 
             {/* Classes List */}
             <Card>

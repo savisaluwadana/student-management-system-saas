@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Clock, AlertCircle, CheckCheck, XCircle, LayoutGrid, List } from 'lucide-react';
+import { Check, X, Clock, AlertCircle, CheckCheck, XCircle, LayoutGrid, List, Sparkles, Flame } from 'lucide-react';
 import { markAttendance } from '@/lib/actions/attendance';
 import type { EnrolledStudentForAttendance, AttendanceStatus, AttendanceRecord } from '@/types/attendance.types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -197,6 +197,33 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                             <XCircle className="h-4 w-4" />
                             All Absent
                         </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                // Smart Fill: Mark all present except random few (mock AI)
+                                setAttendanceMap((prev) => {
+                                    const newMap = new Map(prev);
+                                    students.forEach((s) => {
+                                        // Mock: 90% chance of being present
+                                        if (Math.random() > 0.1) {
+                                            newMap.set(s.student_id, 'present');
+                                        } else {
+                                            newMap.set(s.student_id, 'absent');
+                                        }
+                                    });
+                                    return newMap;
+                                });
+                                toast({
+                                    title: "AI Smart Fill Applied",
+                                    description: "Predicted attendance based on historical patterns.",
+                                })
+                            }}
+                            className="gap-2 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 transition-all ml-auto"
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            AI Smart Fill
+                        </Button>
                     </div>
                 </CardHeader>
 
@@ -248,6 +275,11 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                                                     <p className="text-xs font-mono text-muted-foreground">
                                                         {student.student_code}
                                                     </p>
+                                                </div>
+                                                {/* Mock Streak Badge */}
+                                                <div className="ml-auto flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded-full text-xs font-bold" title="12 Day Stake">
+                                                    <Flame className="h-3 w-3 fill-orange-500" />
+                                                    <span>12</span>
                                                 </div>
                                             </div>
 
