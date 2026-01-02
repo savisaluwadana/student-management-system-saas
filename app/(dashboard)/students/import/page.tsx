@@ -102,7 +102,7 @@ export default function ImportStudentsPage() {
                 errors: result.errors || [],
             });
 
-            if (result.success && result.imported > 0) {
+            if (result.success && (result.imported || 0) > 0) {
                 // Wait a moment then redirect
                 setTimeout(() => {
                     router.push('/students');

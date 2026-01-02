@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,15 +34,23 @@ function NewAssessmentForm() {
     const [loaded, setLoaded] = useState(false);
 
     // Load classes on mount
-    useState(() => {
+    useEffect(() => {
         fetch('/api/classes')
             .then(res => res.json())
             .then(data => {
-                setClasses(data || []);
+                if (Array.isArray(data)) {
+                    setClasses(data);
+                } else {
+                    console.error('API returned non-array:', data);
+                    setClasses([]);
+                }
                 setLoaded(true);
             })
-            .catch(() => setLoaded(true));
-    });
+            .catch((err) => {
+                console.error('Failed to fetch classes:', err);
+                setLoaded(true);
+            });
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

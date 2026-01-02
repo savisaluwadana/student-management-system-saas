@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/cn';
 import { Users, BookOpen, ClipboardCheck, GraduationCap, DollarSign, MessageSquare, Settings } from 'lucide-react';
 
 const navigation = [
