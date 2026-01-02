@@ -80,7 +80,7 @@ export function TeacherForm() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
                     <Plus className="mr-2 h-4 w-4" /> Add Teacher
                 </Button>
             </DialogTrigger>
