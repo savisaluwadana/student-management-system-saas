@@ -35,17 +35,17 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-72 flex-col border-r bg-background/50 backdrop-blur-xl relative overflow-hidden">
-      {/* Aurora Background Effect */}
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-violet-500/5 to-transparent pointer-events-none" />
+      {/* Background Effect */}
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-zinc-500/5 to-transparent pointer-events-none" />
 
       {/* Logo Area */}
       <div className="p-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg hover:shadow-violet-500/20 transition-all duration-300">
-            <Sparkles className="h-6 w-6 text-white" />
+          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg transition-all duration-300">
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
               Academix
             </h1>
             <p className="text-xs text-muted-foreground tracking-wider font-medium">PREMIUM SUITE</p>
@@ -64,19 +64,19 @@ export function Sidebar() {
               className={cn(
                 'group flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ease-out',
                 isActive
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/20'
+                  ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               <item.icon
                 className={cn(
                   'mr-3 h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110',
-                  isActive ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                  isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
                 )}
               />
               {item.name}
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/50 animate-pulse" />
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground/50 animate-pulse" />
               )}
             </Link>
           );
@@ -86,7 +86,7 @@ export function Sidebar() {
       {/* User / Footer */}
       <div className="p-4 border-t bg-black/5 dark:bg-white/5">
         <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-background/50 transition-colors cursor-pointer group">
-          <Avatar className="h-9 w-9 border-2 border-white dark:border-zinc-800 shadow-sm group-hover:border-violet-500 transition-colors">
+          <Avatar className="h-9 w-9 border-2 border-white dark:border-zinc-800 shadow-sm group-hover:border-zinc-400 transition-colors">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>AD</AvatarFallback>
           </Avatar>

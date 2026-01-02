@@ -26,7 +26,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent dark:from-white dark:to-gray-400 drop-shadow-sm">
+                    <h2 className="text-4xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
                         Dashboard
                     </h2>
                     <p className="text-muted-foreground mt-1">
@@ -45,7 +45,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={DollarSign}
                     value={formatCurrency(data.totalRevenue)}
                     subtext="+20.1% from last month"
-                    color="text-emerald-500"
+                    color="text-foreground"
                     trend="up"
                     delay={0.1}
                 />
@@ -54,7 +54,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={Users}
                     value={`+${data.totalStudents}`}
                     subtext="+180.1% from last month"
-                    color="text-blue-500"
+                    color="text-foreground"
                     trend="up"
                     delay={0.2}
                 />
@@ -63,7 +63,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={GraduationCap}
                     value={`+${data.activeClasses}`}
                     subtext="+19% from last month"
-                    color="text-violet-500"
+                    color="text-foreground"
                     trend="up"
                     delay={0.3}
                 />
@@ -72,7 +72,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={Activity}
                     value={`+${data.totalTeachers}`}
                     subtext="+201 since last hour"
-                    color="text-amber-500"
+                    color="text-foreground"
                     trend="up"
                     delay={0.4}
                 />
@@ -124,7 +124,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                                             className="flex items-center group"
                                         >
                                             <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
-                                                <span className="font-bold text-violet-600 dark:text-violet-400">
+                                                <span className="font-bold text-foreground">
                                                     {activity.type === "payment"
                                                         ? "$"
                                                         : activity.type === "login"
@@ -133,7 +133,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                                                 </span>
                                             </div>
                                             <div className="ml-4 space-y-1">
-                                                <p className="text-sm font-medium leading-none group-hover:text-violet-600 transition-colors">
+                                                <p className="text-sm font-medium leading-none group-hover:underline underline-offset-4 transition-all">
                                                     {activity.description}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
@@ -183,19 +183,18 @@ function StatsCard({
                     </CardTitle>
                     <div
                         className={cn(
-                            "p-2 rounded-lg bg-gray-50 dark:bg-white/5",
-                            color.replace("text-", "bg-").replace("500", "100") +
-                            " dark:bg-opacity-10"
+                            "p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800",
+                            "text-foreground"
                         )}
                     >
-                        <Icon className={cn("h-4 w-4", color)} />
+                        <Icon className={cn("h-4 w-4")} />
                     </div>
                 </CardHeader>
                 <CardContent>
                     <div className="text-3xl font-bold tracking-tight">{value}</div>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center">
                         {trend === "up" && (
-                            <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />
+                            <ArrowUpRight className="h-3 w-3 mr-1 text-zinc-500" />
                         )}
                         {subtext}
                     </p>

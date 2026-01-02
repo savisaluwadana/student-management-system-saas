@@ -78,7 +78,7 @@ export function TeacherTable({ teachers }: TeacherTableProps) {
                         <TableCell>{teacher.phone || '-'}</TableCell>
                         <TableCell>{formatDate(teacher.created_at)}</TableCell>
                         <TableCell>
-                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
+                            <Badge variant="secondary" className="bg-zinc-100 text-zinc-900 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700">
                                 Active
                             </Badge>
                         </TableCell>
