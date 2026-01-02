@@ -78,9 +78,9 @@ export function ThemeProvider({
     };
 
     // Prevent hydration mismatch by not rendering children until mounted
-    if (!mounted) {
-        return <>{children}</>;
-    }
+    // if (!mounted) {
+    //     return <>{children}</>;
+    // }
 
     return (
         <ThemeProviderContext.Provider
