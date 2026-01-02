@@ -17,13 +17,14 @@ export async function updateProfile(formData: {
 
     const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+            id: user.id,
             full_name: formData.full_name,
             phone: formData.phone,
             avatar_url: formData.avatar_url,
+            email: user.email, // Ensure email is synced
             updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+        });
 
     if (error) {
         console.error("Error updating profile:", error);
@@ -47,7 +48,17 @@ export async function getCurrentProfile() {
         .eq('id', user.id)
         .single();
 
-    if (error) return null;
+    // If no profile found, return default structure based on auth user
+    if (error || !data) {
+        return {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || '',
+            email: user.email,
+            avatar_url: user.user_metadata?.avatar_url || '',
+            phone: '',
+            role: user.role || 'user'
+        };
+    }
 
     return {
         ...data,
