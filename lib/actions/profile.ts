@@ -48,5 +48,10 @@ export async function getCurrentProfile() {
         .single();
 
     if (error) return null;
-    return data;
+
+    return {
+        ...data,
+        email: user.email,
+        role: user.role || 'user'
+    };
 }

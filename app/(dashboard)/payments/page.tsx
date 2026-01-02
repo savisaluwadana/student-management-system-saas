@@ -28,7 +28,7 @@ export default async function PaymentsPage() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
             Payments
           </h1>
           <p className="text-muted-foreground mt-1 text-lg">
@@ -46,7 +46,7 @@ export default async function PaymentsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-3xl font-bold text-foreground">
               {formatCurrency(stats.totalRevenue)}
             </div>
           </CardContent>
@@ -58,7 +58,7 @@ export default async function PaymentsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+            <div className="text-3xl font-bold text-foreground">
               {formatCurrency(stats.pendingPayments)}
             </div>
           </CardContent>

@@ -19,10 +19,10 @@ interface AttendanceSheetProps {
 }
 
 const statusConfig: Record<AttendanceStatus, { label: string; icon: any; color: string; bg: string; border: string }> = {
-    present: { label: 'Present', icon: Check, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-    absent: { label: 'Absent', icon: X, color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-    late: { label: 'Late', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-    excused: { label: 'Excused', icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+    present: { label: 'Present', icon: Check, color: 'text-zinc-900 dark:text-zinc-100', bg: 'bg-zinc-100 dark:bg-zinc-800', border: 'border-zinc-200 dark:border-zinc-700' },
+    absent: { label: 'Absent', icon: X, color: 'text-zinc-500', bg: 'bg-zinc-50 dark:bg-zinc-900', border: 'border-zinc-200 dark:border-zinc-800' },
+    late: { label: 'Late', icon: Clock, color: 'text-zinc-700 dark:text-zinc-300', bg: 'bg-zinc-100 dark:bg-zinc-800', border: 'border-zinc-200 dark:border-zinc-700' },
+    excused: { label: 'Excused', icon: AlertCircle, color: 'text-zinc-400', bg: 'bg-zinc-50 dark:bg-zinc-900', border: 'border-zinc-200 dark:border-zinc-800' },
 };
 
 export function AttendanceSheet({ classId, className, date, students }: AttendanceSheetProps) {
@@ -118,7 +118,7 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                 <CardHeader className="space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+                            <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
                                 {className}
                             </CardTitle>
                             <div className="flex items-center gap-2 mt-2 text-muted-foreground">
@@ -183,7 +183,7 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                             variant="outline"
                             size="sm"
                             onClick={() => markAllAs('present')}
-                            className="gap-2 hover:border-emerald-500 hover:text-emerald-500 transition-colors"
+                            className="gap-2 transition-colors"
                         >
                             <CheckCheck className="h-4 w-4" />
                             All Present
@@ -192,7 +192,7 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                             variant="outline"
                             size="sm"
                             onClick={() => markAllAs('absent')}
-                            className="gap-2 hover:border-rose-500 hover:text-rose-500 transition-colors"
+                            className="gap-2 transition-colors"
                         >
                             <XCircle className="h-4 w-4" />
                             All Absent
@@ -219,7 +219,7 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                                     description: "Predicted attendance based on historical patterns.",
                                 })
                             }}
-                            className="gap-2 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 transition-all ml-auto"
+                            className="gap-2 border-zinc-200 text-zinc-700 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all ml-auto dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
                         >
                             <Sparkles className="h-4 w-4" />
                             AI Smart Fill
@@ -277,8 +277,8 @@ export function AttendanceSheet({ classId, className, date, students }: Attendan
                                                     </p>
                                                 </div>
                                                 {/* Mock Streak Badge */}
-                                                <div className="ml-auto flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded-full text-xs font-bold" title="12 Day Stake">
-                                                    <Flame className="h-3 w-3 fill-orange-500" />
+                                                <div className="ml-auto flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-2 py-1 rounded-full text-xs font-bold" title="12 Day Stake">
+                                                    <Flame className="h-3 w-3 fill-foreground" />
                                                     <span>12</span>
                                                 </div>
                                             </div>

@@ -17,7 +17,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           {student.full_name}
         </h1>
         <p className="text-muted-foreground">{student.student_code} • {student.email || 'No email'}</p>
