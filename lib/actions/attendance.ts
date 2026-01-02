@@ -27,7 +27,7 @@ export async function getClassesForAttendance(): Promise<ClassWithEnrollmentCoun
       class_name,
       subject,
       schedule,
-      enrollments!inner(id)
+      enrollments(id)
     `)
         .eq('status', 'active')
         .order('class_name');
