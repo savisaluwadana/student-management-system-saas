@@ -1,33 +1,52 @@
 import { getStudentById } from '@/lib/actions/students';
+import { getStudentAttendanceHistory } from '@/lib/actions/attendance';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentForm } from '@/components/students/StudentForm';
+import { StudentAttendanceView } from '@/components/students/StudentAttendanceView';
 import { notFound } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function StudentDetailPage({ params }: { params: { id: string } }) {
   const student = await getStudentById(params.id);
+  const attendanceHistory = await getStudentAttendanceHistory(params.id);
 
   if (!student) {
     notFound();
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Edit Student</h1>
-        <p className="text-muted-foreground">Update student information</p>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+          {student.full_name}
+        </h1>
+        <p className="text-muted-foreground">{student.student_code} • {student.email || 'No email'}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Student Information</CardTitle>
-          <CardDescription>
-            Update the details below to modify the student profile
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <StudentForm student={student} />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="profile">Profile Details</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Information</CardTitle>
+              <CardDescription>
+                Update the details below to modify the student profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StudentForm student={student} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attendance">
+          <StudentAttendanceView history={attendanceHistory} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

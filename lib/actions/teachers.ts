@@ -120,3 +120,27 @@ export async function createTeacher(data: {
     revalidatePath("/teachers");
     return { success: true };
 }
+
+export async function deleteTeacher(id: string) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (!serviceRoleKey || !url) {
+        return { success: false, error: "Missing Service Role Key" };
+    }
+
+    const { createClient } = require("@supabase/supabase-js");
+    const adminClient = createClient(url, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    const { error } = await adminClient.auth.admin.deleteUser(id);
+
+    if (error) {
+        console.error("Error deleting auth user:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/teachers");
+    return { success: true };
+}

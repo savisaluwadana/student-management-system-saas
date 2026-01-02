@@ -306,3 +306,34 @@ export async function deleteAttendance(
     revalidatePath('/attendance');
     return { success: true };
 }
+
+
+/**
+ * Get detailed attendance history for a student
+ */
+export async function getStudentAttendanceHistory(
+    studentId: string,
+    limit = 50
+): Promise<any[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('attendance')
+        .select(`
+            id,
+            date,
+            status,
+            notes,
+            classes(class_name, subject)
+        `)
+        .eq('student_id', studentId)
+        .order('date', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching student attendance history:', error);
+        return [];
+    }
+
+    return data || [];
+}
