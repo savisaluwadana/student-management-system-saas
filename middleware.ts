@@ -8,9 +8,13 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Supabase environment variables are not set. Please check your .env file.')
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -60,10 +64,10 @@ export async function middleware(request: NextRequest) {
 
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith('/students') ||
-      request.nextUrl.pathname.startsWith('/classes') ||
-      request.nextUrl.pathname.startsWith('/payments') ||
-      request.nextUrl.pathname.startsWith('/communications') ||
-      request.nextUrl.pathname.startsWith('/settings')) {
+    request.nextUrl.pathname.startsWith('/classes') ||
+    request.nextUrl.pathname.startsWith('/payments') ||
+    request.nextUrl.pathname.startsWith('/communications') ||
+    request.nextUrl.pathname.startsWith('/settings')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
@@ -71,7 +75,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (request.nextUrl.pathname.startsWith('/login') ||
-      request.nextUrl.pathname.startsWith('/signup')) {
+    request.nextUrl.pathname.startsWith('/signup')) {
     if (user) {
       return NextResponse.redirect(new URL('/', request.url))
     }
