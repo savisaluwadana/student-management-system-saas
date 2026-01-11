@@ -31,6 +31,7 @@ export interface CreateStudentInput {
   joining_date?: string;
   status?: StudentStatus;
   notes?: string;
+  class_ids?: string[];
 }
 
 export interface UpdateStudentInput {
@@ -45,4 +46,5 @@ export interface UpdateStudentInput {
   joining_date?: string;
   status?: StudentStatus;
   notes?: string;
+  class_ids?: string[];
 }

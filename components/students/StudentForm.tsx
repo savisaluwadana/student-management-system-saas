@@ -8,8 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createStudent, updateStudent } from '@/lib/actions/students';
+import { getClasses } from '@/lib/actions/classes';
 import { useToast } from '@/components/ui/use-toast';
+import { MultiSelect } from '@/components/ui/multi-select';
 import type { Student, CreateStudentInput } from '@/types/student.types';
+import type { Class } from '@/types/class.types';
 
 interface StudentFormProps {
   student?: Student;
@@ -19,6 +22,17 @@ export function StudentForm({ student }: StudentFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]);
+
+  // Fetch classes on mount
+  useState(() => {
+    const fetchClasses = async () => {
+      const data = await getClasses('active');
+      setClasses(data);
+    };
+    fetchClasses();
+  });
+
   const [formData, setFormData] = useState<CreateStudentInput>({
     student_code: student?.student_code || '',
     full_name: student?.full_name || '',
@@ -32,7 +46,11 @@ export function StudentForm({ student }: StudentFormProps) {
     joining_date: student?.joining_date || new Date().toISOString().split('T')[0],
     status: student?.status || 'active',
     notes: student?.notes || '',
+    class_ids: [], // Should initialize with existing enrollments if editing, but for now empty or handle separately
   });
+
+  // TODO: If editing, need to fetch existing enrollments to populate class_ids
+  // This might require a separate useEffect or prop if not included in 'student' object
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,6 +229,16 @@ export function StudentForm({ student }: StudentFormProps) {
           value={formData.notes || ''}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           rows={3}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Classes</Label>
+        <MultiSelect
+          options={classes.map(c => ({ label: `${c.class_name} (${c.class_code})`, value: c.id }))}
+          selected={formData.class_ids || []}
+          onChange={(selected) => setFormData({ ...formData, class_ids: selected })}
+          placeholder="Select classes..."
         />
       </div>
 
