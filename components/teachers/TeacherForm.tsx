@@ -25,18 +25,37 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { createTeacher } from "@/lib/actions/teachers"
+import { createTeacher, updateTeacher } from "@/lib/actions/teachers"
 import { toast } from "@/components/ui/use-toast"
+import { getClasses } from "@/lib/actions/classes"
+import { MultiSelect } from "@/components/ui/multi-select"
+import { useEffect } from "react"
 
 const formSchema = z.object({
     full_name: z.string().min(2, "Name must be at least 2 characters."),
     email: z.string().email("Invalid email address."),
     phone: z.string().optional(),
+    class_ids: z.array(z.string()).optional(),
 })
 
 export function TeacherForm() {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [classes, setClasses] = useState<{ label: string; value: string }[]>([])
+
+    useEffect(() => {
+        const fetchClasses = async () => {
+            try {
+                // Fetch all classes regardless of status, or maybe just active?
+                // Let's fetch all for now, or active.
+                const data = await getClasses();
+                setClasses(data.map(c => ({ label: c.class_name, value: c.id })));
+            } catch (error) {
+                console.error("Failed to load classes", error);
+            }
+        };
+        fetchClasses();
+    }, []);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -44,6 +63,7 @@ export function TeacherForm() {
             full_name: "",
             email: "",
             phone: "",
+            class_ids: [],
         },
     })
 
@@ -123,11 +143,28 @@ export function TeacherForm() {
                             control={form.control}
                             name="phone"
                             render={({ field }) => (
-                                // Casting field to any to avoid implicit type error in strict mode
                                 <FormItem>
                                     <FormLabel>Phone (Optional)</FormLabel>
                                     <FormControl>
                                         <Input placeholder="+1 234 567 890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="class_ids"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Assign Classes</FormLabel>
+                                    <FormControl>
+                                        <MultiSelect
+                                            options={classes}
+                                            selected={field.value || []}
+                                            onChange={field.onChange}
+                                            placeholder="Select classes to assign..."
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

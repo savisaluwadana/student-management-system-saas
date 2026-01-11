@@ -59,6 +59,7 @@ export function TeacherTable({ teachers }: TeacherTableProps) {
                     <TableHead>Full Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Classes</TableHead>
                     <TableHead>Joined Date</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -76,6 +77,19 @@ export function TeacherTable({ teachers }: TeacherTableProps) {
                         <TableCell className="font-medium">{teacher.full_name}</TableCell>
                         <TableCell>{teacher.email}</TableCell>
                         <TableCell>{teacher.phone || '-'}</TableCell>
+                        <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                                {teacher.classes && teacher.classes.length > 0 ? (
+                                    teacher.classes.map(c => (
+                                        <Badge key={c.id} variant="outline" className="text-xs">
+                                            {c.class_name}
+                                        </Badge>
+                                    ))
+                                ) : (
+                                    <span className="text-muted-foreground text-xs italic">No classes</span>
+                                )}
+                            </div>
+                        </TableCell>
                         <TableCell>{formatDate(teacher.created_at)}</TableCell>
                         <TableCell>
                             <Badge variant="secondary" className="bg-zinc-100 text-zinc-900 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700">
