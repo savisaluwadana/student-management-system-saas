@@ -250,3 +250,24 @@ export async function getAllStudentsForExport(): Promise<Student[]> {
   return data || [];
 }
 
+/**
+ * Get all enrollments for a student
+ */
+export async function getStudentEnrollments(studentId: string): Promise<string[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('class_id')
+    .eq('student_id', studentId)
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('Error fetching student enrollments:', error);
+    return [];
+  }
+
+  return data?.map(enrollment => enrollment.class_id) || [];
+}
+
+

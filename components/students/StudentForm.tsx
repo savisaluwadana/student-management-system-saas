@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createStudent, updateStudent } from '@/lib/actions/students';
+import { createStudent, updateStudent, getStudentEnrollments } from '@/lib/actions/students';
 import { getClasses } from '@/lib/actions/classes';
 import { useToast } from '@/components/ui/use-toast';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -24,14 +24,30 @@ export function StudentForm({ student }: StudentFormProps) {
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
 
-  // Fetch classes on mount
-  useState(() => {
-    const fetchClasses = async () => {
-      const data = await getClasses('active');
-      setClasses(data);
+  // Fetch classes and enrollments on mount
+  useEffect(() => {
+    const loadData = async () => {
+      // Fetch available classes
+      const classesData = await getClasses('active');
+      setClasses(classesData);
+
+      // If editing a student, fetch their existing enrollments
+      if (student?.id) {
+        try {
+          const enrollments = await getStudentEnrollments(student.id);
+          setFormData(prev => ({ ...prev, class_ids: enrollments }));
+        } catch (error) {
+          console.error('Error loading student enrollments:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to load existing class enrollments',
+          });
+        }
+      }
     };
-    fetchClasses();
-  });
+    loadData();
+  }, [student?.id, toast]);
 
   const [formData, setFormData] = useState<CreateStudentInput>({
     student_code: student?.student_code || '',
