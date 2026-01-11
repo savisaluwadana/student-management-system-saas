@@ -16,6 +16,13 @@ export interface Student {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  enrollments?: {
+    class: {
+      id: string;
+      class_name: string;
+      class_code: string;
+    };
+  }[];
 }
 
 export interface CreateStudentInput {

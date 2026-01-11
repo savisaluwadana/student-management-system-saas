@@ -21,6 +21,8 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Class } from "@/types/class.types";
 import { Textarea } from "@/components/ui/textarea";
+import { getTeachers, Teacher } from "@/lib/actions/teachers";
+import { useEffect } from "react";
 
 const classSchema = z.object({
     class_code: z.string().min(2, "Class code must be at least 2 characters."),
@@ -35,6 +37,9 @@ const classSchema = z.object({
     }).optional(),
     status: z.enum(["active", "inactive", "completed"]),
     schedule: z.string().optional(),
+    teacher_id: z.string({
+        required_error: "Please select a teacher.",
+    }).min(1, "Please select a teacher."),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -47,6 +52,19 @@ export function ClassForm({ initialData }: ClassFormProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+
+    useEffect(() => {
+        const fetchTeachers = async () => {
+            try {
+                const data = await getTeachers();
+                setTeachers(data);
+            } catch (error) {
+                console.error("Failed to load teachers", error);
+            }
+        };
+        fetchTeachers();
+    }, []);
 
     const defaultValues: Partial<ClassFormValues> = initialData
         ? {
@@ -58,6 +76,7 @@ export function ClassForm({ initialData }: ClassFormProps) {
             capacity: initialData.capacity?.toString(),
             status: initialData.status,
             schedule: initialData.schedule || "",
+            teacher_id: initialData.teacher_id || "",
         }
         : {
             class_code: "",
@@ -68,6 +87,7 @@ export function ClassForm({ initialData }: ClassFormProps) {
             capacity: "",
             status: "active",
             schedule: "",
+            teacher_id: "",
         };
 
     const form = useForm<ClassFormValues>({
@@ -82,6 +102,7 @@ export function ClassForm({ initialData }: ClassFormProps) {
                 ...data,
                 monthly_fee: data.monthly_fee ? parseFloat(data.monthly_fee) : 0,
                 capacity: data.capacity ? parseInt(data.capacity) : 0,
+                teacher_id: data.teacher_id,
             };
 
             let result;
@@ -201,6 +222,30 @@ export function ClassForm({ initialData }: ClassFormProps) {
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="inactive">Inactive</SelectItem>
                                         <SelectItem value="completed">Completed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="teacher_id"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Teacher</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a teacher" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {teachers.map((teacher) => (
+                                            <SelectItem key={teacher.id} value={teacher.id}>
+                                                {teacher.full_name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

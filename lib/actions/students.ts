@@ -12,7 +12,7 @@ export async function getStudents(status?: string): Promise<Student[]> {
 
   let query = supabase
     .from('students')
-    .select('*')
+    .select('*, enrollments(class:classes(id, class_name, class_code))')
     .order('created_at', { ascending: false });
 
   if (status) {
@@ -37,7 +37,7 @@ export async function getStudentById(id: string): Promise<Student | null> {
 
   const { data, error } = await supabase
     .from('students')
-    .select('*')
+    .select('*, enrollments(class:classes(id, class_name, class_code))')
     .eq('id', id)
     .single();
 
