@@ -154,8 +154,8 @@ export function GradeEntryForm({ assessment, students }: GradeEntryFormProps) {
             {message && (
                 <div
                     className={`p-3 rounded-lg ${message.type === 'success'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-100'
-                            : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-100'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-100'
+                        : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-100'
                         }`}
                 >
                     {message.text}
@@ -207,11 +207,11 @@ export function GradeEntryForm({ assessment, students }: GradeEntryFormProps) {
                                             </TableCell>
                                             <TableCell>
                                                 <span
-                                                    className={`font-bold ${grade?.score !== null
-                                                            ? (grade.score / assessment.max_score) * 100 >= 60
-                                                                ? 'text-foreground'
-                                                                : 'text-muted-foreground'
+                                                    className={`font-bold ${grade && grade.score !== null
+                                                        ? (grade.score / assessment.max_score) * 100 >= 60
+                                                            ? 'text-foreground'
                                                             : 'text-muted-foreground'
+                                                        : 'text-muted-foreground'
                                                         }`}
                                                 >
                                                     {getGradeDisplay(grade?.score ?? null)}

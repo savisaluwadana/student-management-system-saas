@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 export async function POST(request: Request) {
     try {
@@ -11,6 +11,13 @@ export async function POST(request: Request) {
         if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (!resendApiKey) {
+            console.error('RESEND_API_KEY is not set');
+            return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
+        }
+        const resend = new Resend(resendApiKey);
 
         if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
             return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 });

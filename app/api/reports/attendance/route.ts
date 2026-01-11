@@ -2,129 +2,129 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const classId = searchParams.get('classId');
-        const startDate = searchParams.get('startDate');
-        const endDate = searchParams.get('endDate');
+  try {
+    const { searchParams } = new URL(request.url);
+    const classId = searchParams.get('classId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
-        if (!classId || !startDate || !endDate) {
-            return NextResponse.json(
-                { error: 'classId, startDate, and endDate are required' },
-                { status: 400 }
-            );
-        }
+    if (!classId || !startDate || !endDate) {
+      return NextResponse.json(
+        { error: 'classId, startDate, and endDate are required' },
+        { status: 400 }
+      );
+    }
 
-        const supabase = await createClient();
+    const supabase = await createClient();
 
-        // Get class info
-        const { data: classData, error: classError } = await supabase
-            .from('classes')
-            .select('class_code, class_name, subject')
-            .eq('id', classId)
-            .single();
+    // Get class info
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('class_code, class_name, subject')
+      .eq('id', classId)
+      .single();
 
-        if (classError) {
-            return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-        }
+    if (classError) {
+      return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+    }
 
-        // Get attendance data with student info
-        const { data: attendanceData, error: attendanceError } = await supabase
-            .from('attendance')
-            .select(`
+    // Get attendance data with student info
+    const { data: attendanceData, error: attendanceError } = await supabase
+      .from('attendance')
+      .select(`
         date,
         status,
         students(student_code, full_name)
       `)
-            .eq('class_id', classId)
-            .gte('date', startDate)
-            .lte('date', endDate)
-            .order('date', { ascending: true });
+      .eq('class_id', classId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
 
-        if (attendanceError) {
-            return NextResponse.json({ error: attendanceError.message }, { status: 500 });
-        }
-
-        // Process data for report
-        const studentAttendance: Map<string, {
-            code: string;
-            name: string;
-            records: { date: string; status: string }[]
-        }> = new Map();
-
-        for (const record of attendanceData || []) {
-            const student = (record as any).students;
-            const key = student.student_code;
-
-            if (!studentAttendance.has(key)) {
-                studentAttendance.set(key, {
-                    code: student.student_code,
-                    name: student.full_name,
-                    records: [],
-                });
-            }
-
-            studentAttendance.get(key)!.records.push({
-                date: record.date,
-                status: record.status,
-            });
-        }
-
-        // Get unique dates
-        const dates = [...new Set((attendanceData || []).map(r => r.date))].sort();
-
-        // Generate HTML report
-        const html = generateAttendanceReportHTML({
-            classData,
-            studentAttendance: Array.from(studentAttendance.values()),
-            dates,
-            startDate,
-            endDate,
-        });
-
-        return new NextResponse(html, {
-            headers: {
-                'Content-Type': 'text/html',
-                'Content-Disposition': `inline; filename="attendance-report-${classData.class_code}.html"`,
-            },
-        });
-    } catch (error: any) {
-        console.error('Error generating attendance report:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (attendanceError) {
+      return NextResponse.json({ error: attendanceError.message }, { status: 500 });
     }
+
+    // Process data for report
+    const studentAttendance: Map<string, {
+      code: string;
+      name: string;
+      records: { date: string; status: string }[]
+    }> = new Map();
+
+    for (const record of attendanceData || []) {
+      const student = (record as any).students;
+      const key = student.student_code;
+
+      if (!studentAttendance.has(key)) {
+        studentAttendance.set(key, {
+          code: student.student_code,
+          name: student.full_name,
+          records: [],
+        });
+      }
+
+      studentAttendance.get(key)!.records.push({
+        date: record.date,
+        status: record.status,
+      });
+    }
+
+    // Get unique dates
+    const dates = Array.from(new Set((attendanceData || []).map(r => r.date))).sort();
+
+    // Generate HTML report
+    const html = generateAttendanceReportHTML({
+      classData,
+      studentAttendance: Array.from(studentAttendance.values()),
+      dates,
+      startDate,
+      endDate,
+    });
+
+    return new NextResponse(html, {
+      headers: {
+        'Content-Type': 'text/html',
+        'Content-Disposition': `inline; filename="attendance-report-${classData.class_code}.html"`,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error generating attendance report:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 function generateAttendanceReportHTML(data: {
-    classData: { class_code: string; class_name: string; subject: string };
-    studentAttendance: { code: string; name: string; records: { date: string; status: string }[] }[];
-    dates: string[];
-    startDate: string;
-    endDate: string;
+  classData: { class_code: string; class_name: string; subject: string };
+  studentAttendance: { code: string; name: string; records: { date: string; status: string }[] }[];
+  dates: string[];
+  startDate: string;
+  endDate: string;
 }) {
-    const { classData, studentAttendance, dates, startDate, endDate } = data;
+  const { classData, studentAttendance, dates, startDate, endDate } = data;
 
-    const formatDate = (dateStr: string) => {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
-    const getStatusSymbol = (status: string) => {
-        switch (status) {
-            case 'present': return '✓';
-            case 'absent': return '✗';
-            case 'late': return 'L';
-            case 'excused': return 'E';
-            default: return '-';
-        }
-    };
+  const getStatusSymbol = (status: string) => {
+    switch (status) {
+      case 'present': return '✓';
+      case 'absent': return '✗';
+      case 'late': return 'L';
+      case 'excused': return 'E';
+      default: return '-';
+    }
+  };
 
-    const calculatePercentage = (records: { status: string }[]) => {
-        if (records.length === 0) return 0;
-        const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
-        return Math.round((present / records.length) * 100);
-    };
+  const calculatePercentage = (records: { status: string }[]) => {
+    if (records.length === 0) return 0;
+    const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
+    return Math.round((present / records.length) * 100);
+  };
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -242,21 +242,21 @@ function generateAttendanceReportHTML(data: {
     </thead>
     <tbody>
       ${studentAttendance.map(student => {
-        const percentage = calculatePercentage(student.records);
-        const percentageClass = percentage >= 80 ? 'high' : percentage >= 60 ? 'medium' : 'low';
-        return `
+    const percentage = calculatePercentage(student.records);
+    const percentageClass = percentage >= 80 ? 'high' : percentage >= 60 ? 'medium' : 'low';
+    return `
           <tr>
             <td>${student.code}</td>
             <td class="student-name">${student.name}</td>
             ${dates.map(date => {
-            const record = student.records.find(r => r.date === date);
-            const status = record?.status || '';
-            return `<td class="${status}">${getStatusSymbol(status)}</td>`;
-        }).join('')}
+      const record = student.records.find(r => r.date === date);
+      const status = record?.status || '';
+      return `<td class="${status}">${getStatusSymbol(status)}</td>`;
+    }).join('')}
             <td class="percentage ${percentageClass}">${percentage}%</td>
           </tr>
         `;
-    }).join('')}
+  }).join('')}
     </tbody>
   </table>
 
