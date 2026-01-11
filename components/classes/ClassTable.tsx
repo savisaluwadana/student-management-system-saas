@@ -5,10 +5,11 @@ import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Eye } from 'lucide-react';
 import { deleteClass } from '@/lib/actions/classes';
 import { toast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Class } from '@/types/class.types';
 import { ClassForm } from './ClassForm';
 
@@ -79,6 +80,11 @@ export function ClassTable({ classes }: ClassTableProps) {
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
+                            <Link href={`/classes/${cls.id}`}>
+                                <Button variant="ghost" size="icon">
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                            </Link>
                             <ClassForm
                                 initialData={cls}
                                 trigger={

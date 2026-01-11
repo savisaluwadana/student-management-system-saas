@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { deleteTeacher, Teacher } from '@/lib/actions/teachers';
 import { toast } from '@/components/ui/use-toast';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TeacherForm } from './TeacherForm';

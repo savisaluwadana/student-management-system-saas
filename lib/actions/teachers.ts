@@ -38,6 +38,24 @@ export async function getTeachers(): Promise<Teacher[]> {
     return data as Teacher[];
 }
 
+export async function getTeacherById(id: string): Promise<Teacher | null> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("*, classes(id, class_name, class_code)")
+        .eq("role", "teacher")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        console.error("Error fetching teacher:", error);
+        return null;
+    }
+
+    return data as Teacher;
+}
+
 export async function createTeacher(data: {
     full_name: string;
     email: string;
