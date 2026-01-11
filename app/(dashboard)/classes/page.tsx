@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
+import { ClassTable } from '@/components/classes/ClassTable';
 
 export default async function ClassesPage() {
   const classes = await getClasses();
@@ -38,34 +39,7 @@ export default async function ClassesPage() {
               <p className="text-muted-foreground">No classes found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Monthly Fee</TableHead>
-                  <TableHead>Capacity</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {classes.map((cls) => (
-                  <TableRow key={cls.id}>
-                    <TableCell className="font-medium">{cls.class_code}</TableCell>
-                    <TableCell>{cls.class_name}</TableCell>
-                    <TableCell>{cls.subject}</TableCell>
-                    <TableCell>{formatCurrency(cls.monthly_fee)}</TableCell>
-                    <TableCell>{cls.capacity}</TableCell>
-                    <TableCell>
-                      <Badge variant={cls.status === 'active' ? 'default' : 'secondary'}>
-                        {cls.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ClassTable classes={classes} />
           )}
         </CardContent>
       </Card>

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createStudent, updateStudent, getStudentEnrollments } from '@/lib/actions/students';
+import { createStudent, updateStudent } from '@/lib/actions/students';
 import { getClasses } from '@/lib/actions/classes';
 import { useToast } from '@/components/ui/use-toast';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -24,31 +24,6 @@ export function StudentForm({ student }: StudentFormProps) {
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
 
-  // Fetch classes and enrollments on mount
-  useEffect(() => {
-    const loadData = async () => {
-      // Fetch available classes
-      const classesData = await getClasses('active');
-      setClasses(classesData);
-
-      // If editing a student, fetch their existing enrollments
-      if (student?.id) {
-        try {
-          const enrollments = await getStudentEnrollments(student.id);
-          setFormData(prev => ({ ...prev, class_ids: enrollments }));
-        } catch (error) {
-          console.error('Error loading student enrollments:', error);
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to load existing class enrollments',
-          });
-        }
-      }
-    };
-    loadData();
-  }, [student?.id, toast]);
-
   const [formData, setFormData] = useState<CreateStudentInput>({
     student_code: student?.student_code || '',
     full_name: student?.full_name || '',
@@ -62,8 +37,26 @@ export function StudentForm({ student }: StudentFormProps) {
     joining_date: student?.joining_date || new Date().toISOString().split('T')[0],
     status: student?.status || 'active',
     notes: student?.notes || '',
-    class_ids: [], // Should initialize with existing enrollments if editing, but for now empty or handle separately
+    class_ids: student?.enrollments?.map(e => e.class.id) || [],
   });
+
+  // Fetch classes on mount
+  useEffect(() => {
+    const loadClasses = async () => {
+      try {
+        const classesData = await getClasses('active');
+        setClasses(classesData);
+      } catch (error) {
+        console.error('Failed to load classes', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load available classes',
+        });
+      }
+    };
+    loadClasses();
+  }, [toast]);
 
   // TODO: If editing, need to fetch existing enrollments to populate class_ids
   // This might require a separate useEffect or prop if not included in 'student' object

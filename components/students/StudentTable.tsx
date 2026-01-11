@@ -76,6 +76,7 @@ export function StudentTable({ students }: StudentTableProps) {
           <TableHead>Name</TableHead>
           <TableHead>Phone</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Classes</TableHead>
           <TableHead>Joining Date</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -90,6 +91,15 @@ export function StudentTable({ students }: StudentTableProps) {
               <Badge variant={getStatusBadgeVariant(student.status)}>
                 {student.status}
               </Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-wrap gap-1">
+                {student.enrollments?.map((enrollment, index) => (
+                  <Badge key={index} variant="secondary">
+                    {enrollment.class.class_name}
+                  </Badge>
+                )) || '-'}
+              </div>
             </TableCell>
             <TableCell>{formatDate(student.joining_date)}</TableCell>
             <TableCell className="text-right space-x-2">

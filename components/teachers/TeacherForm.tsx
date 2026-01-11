@@ -38,7 +38,15 @@ const formSchema = z.object({
     class_ids: z.array(z.string()).optional(),
 })
 
-export function TeacherForm() {
+import { Teacher } from "@/lib/actions/teachers"
+
+interface TeacherFormProps {
+    teacher?: Teacher;
+    trigger?: React.ReactNode;
+    onSuccess?: () => void;
+}
+
+export function TeacherForm({ teacher, trigger, onSuccess }: TeacherFormProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [classes, setClasses] = useState<{ label: string; value: string }[]>([])
@@ -60,30 +68,45 @@ export function TeacherForm() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            full_name: "",
-            email: "",
-            phone: "",
-            class_ids: [],
+            full_name: teacher?.full_name || "",
+            email: teacher?.email || "",
+            phone: teacher?.phone || "",
+            class_ids: teacher?.classes?.map(c => c.id) || [],
         },
     })
+
+    // Update form when teacher prop changes
+    useEffect(() => {
+        if (teacher) {
+            form.reset({
+                full_name: teacher.full_name,
+                email: teacher.email,
+                phone: teacher.phone || "",
+                class_ids: teacher.classes?.map(c => c.id) || [],
+            });
+        }
+    }, [teacher, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)
         try {
-            const result = await createTeacher(values)
+            const result = teacher
+                ? await updateTeacher(teacher.id, values)
+                : await createTeacher(values)
 
             if (result.success) {
                 toast({
-                    title: "Teacher Added",
-                    description: "The teacher account has been created successfully.",
+                    title: teacher ? "Teacher Updated" : "Teacher Added",
+                    description: teacher ? "Teacher details have been updated." : "The teacher account has been created successfully.",
                 })
                 setOpen(false)
-                form.reset()
+                if (!teacher) form.reset() // Only reset on create
+                if (onSuccess) onSuccess();
             } else {
                 toast({
                     variant: "destructive",
                     title: "Error",
-                    description: result.error || "Failed to create teacher.",
+                    description: result.error || (teacher ? "Failed to update teacher." : "Failed to create teacher."),
                 })
             }
         } catch (error) {
@@ -100,15 +123,17 @@ export function TeacherForm() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                    <Plus className="mr-2 h-4 w-4" /> Add Teacher
-                </Button>
+                {trigger || (
+                    <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                        <Plus className="mr-2 h-4 w-4" /> Add Teacher
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Add New Teacher</DialogTitle>
+                    <DialogTitle>{teacher ? "Edit Teacher" : "Add New Teacher"}</DialogTitle>
                     <DialogDescription>
-                        Create a new teacher account. A temporary password will be assigned.
+                        {teacher ? "Update teacher details and class assignments." : "Create a new teacher account. A temporary password will be assigned."}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -172,7 +197,7 @@ export function TeacherForm() {
                         />
                         <DialogFooter>
                             <Button type="submit" disabled={loading}>
-                                {loading ? "Creating..." : "Create Account"}
+                                {loading ? (teacher ? "Updating..." : "Creating...") : (teacher ? "Save Changes" : "Create Account")}
                             </Button>
                         </DialogFooter>
                     </form>

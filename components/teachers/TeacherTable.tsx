@@ -10,6 +10,7 @@ import { deleteTeacher, Teacher } from '@/lib/actions/teachers';
 import { toast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TeacherForm } from './TeacherForm';
 
 interface TeacherTableProps {
     teachers: Teacher[];
@@ -97,9 +98,15 @@ export function TeacherTable({ teachers }: TeacherTableProps) {
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="icon" disabled>
-                                <Pencil className="h-4 w-4" />
-                            </Button>
+                            <TeacherForm
+                                teacher={teacher}
+                                trigger={
+                                    <Button variant="ghost" size="icon">
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                }
+                                onSuccess={() => router.refresh()}
+                            />
                             <Button
                                 variant="ghost"
                                 size="icon"

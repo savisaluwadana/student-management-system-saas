@@ -23,7 +23,21 @@ import { Class } from "@/types/class.types";
 import { Textarea } from "@/components/ui/textarea";
 import { getTeachers, Teacher } from "@/lib/actions/teachers";
 import { useEffect } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 
+interface ClassFormProps {
+    initialData?: Class;
+    trigger?: React.ReactNode;
+    onSuccess?: () => void;
+}
 const classSchema = z.object({
     class_code: z.string().min(2, "Class code must be at least 2 characters."),
     class_name: z.string().min(2, "Class name must be at least 2 characters."),
@@ -48,10 +62,11 @@ interface ClassFormProps {
     initialData?: Class;
 }
 
-export function ClassForm({ initialData }: ClassFormProps) {
+export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [open, setOpen] = useState(false);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
 
     useEffect(() => {
@@ -117,8 +132,20 @@ export function ClassForm({ initialData }: ClassFormProps) {
                     title: initialData ? "Class updated" : "Class created",
                     description: "The class has been saved successfully.",
                 });
-                router.push("/classes");
-                router.refresh();
+                setOpen(false);
+                if (!initialData) {
+                    // Only push/reset if checking from a page, but if in dialog?
+                    // If trigger is present, it's likely a dialog.
+                }
+
+                if (trigger) {
+                    router.refresh();
+                } else {
+                    router.push("/classes");
+                    router.refresh();
+                }
+
+                if (onSuccess) onSuccess();
             } else {
                 toast({
                     variant: "destructive",
@@ -137,7 +164,7 @@ export function ClassForm({ initialData }: ClassFormProps) {
         }
     }
 
-    return (
+    const FormContent = (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -285,4 +312,25 @@ export function ClassForm({ initialData }: ClassFormProps) {
             </form>
         </Form>
     );
+
+    if (trigger) {
+        return (
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    {trigger}
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{initialData ? "Edit Class" : "Create Class"}</DialogTitle>
+                        <DialogDescription>
+                            {initialData ? "Update class details." : "Add a new class to the system."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {FormContent}
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    return FormContent;
 }
