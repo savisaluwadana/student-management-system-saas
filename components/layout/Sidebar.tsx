@@ -30,11 +30,11 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-72 flex-col border-r bg-background/50 backdrop-blur-xl relative overflow-hidden">
+    <div className={cn("flex h-full w-72 flex-col border-r bg-background/50 backdrop-blur-xl relative overflow-hidden", className)}>
       {/* Background Effect */}
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-zinc-500/5 to-transparent pointer-events-none" />
 
@@ -85,7 +85,7 @@ export function Sidebar() {
 
       {/* User / Footer */}
       <div className="p-4 border-t bg-black/5 dark:bg-white/5">
-        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-background/50 transition-colors cursor-pointer group">
+        <Link href="/settings" className="flex items-center gap-3 p-2 rounded-xl hover:bg-background/50 transition-colors cursor-pointer group">
           <Avatar className="h-9 w-9 border-2 border-white dark:border-zinc-800 shadow-sm group-hover:border-zinc-400 transition-colors">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>AD</AvatarFallback>
@@ -95,7 +95,7 @@ export function Sidebar() {
             <p className="text-xs text-muted-foreground truncate mt-1">admin@school.com</p>
           </div>
           <Settings className="h-4 w-4 text-muted-foreground group-hover:rotate-45 transition-transform" />
-        </div>
+        </Link>
       </div>
     </div>
   );
