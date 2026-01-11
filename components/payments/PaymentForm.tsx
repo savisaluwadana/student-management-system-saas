@@ -136,7 +136,7 @@ export function PaymentForm() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
                     Record Payment
                 </Button>
             </DialogTrigger>

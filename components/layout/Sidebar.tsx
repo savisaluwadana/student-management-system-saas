@@ -30,7 +30,7 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar({ className }: { className?: string }) {
+export function Sidebar({ className, user }: { className?: string; user?: any }) {
   const pathname = usePathname();
 
   return (
@@ -87,12 +87,12 @@ export function Sidebar({ className }: { className?: string }) {
       <div className="p-4 border-t bg-black/5 dark:bg-white/5">
         <Link href="/settings" className="flex items-center gap-3 p-2 rounded-xl hover:bg-background/50 transition-colors cursor-pointer group">
           <Avatar className="h-9 w-9 border-2 border-white dark:border-zinc-800 shadow-sm group-hover:border-zinc-400 transition-colors">
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.user_metadata?.full_name || user?.email || 'User'}`} />
+            <AvatarFallback>{(user?.email || 'AD').substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium leading-none">Admin User</p>
-            <p className="text-xs text-muted-foreground truncate mt-1">admin@school.com</p>
+            <p className="text-sm font-medium leading-none truncate">{user?.user_metadata?.full_name || 'User'}</p>
+            <p className="text-xs text-muted-foreground truncate mt-1">{user?.email || 'No email'}</p>
           </div>
           <Settings className="h-4 w-4 text-muted-foreground group-hover:rotate-45 transition-transform" />
         </Link>
