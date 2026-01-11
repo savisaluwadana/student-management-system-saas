@@ -55,9 +55,11 @@ export async function getStudentById(id: string): Promise<Student | null> {
 export async function createStudent(input: CreateStudentInput): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = await createClient();
 
+  const { class_ids, ...studentData } = input;
+
   const { data, error } = await supabase
     .from('students')
-    .insert(input)
+    .insert(studentData)
     .select()
     .single();
 
@@ -206,7 +208,10 @@ export async function bulkCreateStudents(
   // Insert in batches of 50
   const batchSize = 50;
   for (let i = 0; i < students.length; i += batchSize) {
-    const batch = students.slice(i, i + batchSize);
+    const batch = students.slice(i, i + batchSize).map(s => {
+      const { class_ids, ...rest } = s;
+      return rest;
+    });
 
     const { data, error } = await supabase
       .from('students')
