@@ -12,7 +12,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={user} />
       <div className="flex-1 flex overflow-hidden">
         <div className="hidden md:flex h-full">
           <Sidebar user={user} />

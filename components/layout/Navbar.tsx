@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Navbar() {
+export function Navbar({ user }: { user?: any }) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -47,7 +47,7 @@ export function Navbar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-72">
-            <Sidebar className="border-none w-full" />
+            <Sidebar className="border-none w-full" user={user} />
           </SheetContent>
         </Sheet>
         <Link href="/" className="flex items-center space-x-2">
