@@ -274,6 +274,8 @@ For issues and questions:
 - Supabase for the backend infrastructure
 - Shadcn for the beautiful UI components
 - Vercel for hosting platform
+- <img width="3018" height="1636" alt="image" src="https://github.com/user-attachments/assets/fe3f00d0-9e28-4bca-90d5-220194885b99" />
+
 
 ---
 docker commands
