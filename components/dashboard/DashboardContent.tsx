@@ -5,6 +5,7 @@ import { OverviewChart } from "@/components/dashboard/OverviewChart";
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
 import { TopClassesWidget } from "@/components/dashboard/TopClassesWidget";
 import { OverduePaymentBanner } from "@/components/dashboard/OverduePaymentBanner";
+import { QuickActions } from "@/components/dashboard/QuickActions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     DollarSign,
@@ -66,6 +67,15 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     />
                 </motion.div>
             )}
+
+            {/* Quick Actions */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+            >
+                <QuickActions />
+            </motion.div>
 
             {/* Stats Cards - Now 6 cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
