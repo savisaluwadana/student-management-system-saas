@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Barcode from 'react-barcode';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, QrCode } from 'lucide-react';
+import { Download, Printer, QrCode, Loader2 } from 'lucide-react';
 
 interface StudentBarcodeProps {
     barcode: string;
@@ -30,32 +30,45 @@ export function StudentBarcode({
     size = 'medium',
 }: StudentBarcodeProps) {
     const barcodeRef = useRef<HTMLDivElement>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
     const sizeConfig = sizes[size];
 
-    const handleDownload = () => {
-        if (!barcodeRef.current) return;
+    const handleDownload = async () => {
+        if (!barcodeRef.current || isDownloading) return;
 
-        const svg = barcodeRef.current.querySelector('svg');
-        if (!svg) return;
+        setIsDownloading(true);
 
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
+        try {
+            // Dynamic imports to avoid SSR issues
+            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
 
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx?.drawImage(img, 0, 0);
+            const canvas = await html2canvas(barcodeRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+            });
 
-            const link = document.createElement('a');
-            link.download = `${studentCode}-barcode.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        };
+            // Create PDF (landscape for barcode)
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [90, 50]
+            });
 
-        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 5, 5, 80, 40);
+
+            pdf.save(`${studentCode}-barcode.pdf`);
+        } catch (error) {
+            console.error('Error downloading barcode:', error);
+            alert('Failed to download barcode. Please try again.');
+        } finally {
+            setIsDownloading(false);
+        }
     };
+
 
     const handlePrint = () => {
         if (!barcodeRef.current) return;
@@ -146,9 +159,18 @@ export function StudentBarcode({
                     {(showDownload || showPrint) && (
                         <div className="flex gap-2">
                             {showDownload && (
-                                <Button variant="outline" size="sm" onClick={handleDownload}>
-                                    <Download className="h-4 w-4 mr-1" />
-                                    Download
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleDownload}
+                                    disabled={isDownloading}
+                                >
+                                    {isDownloading ? (
+                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    ) : (
+                                        <Download className="h-4 w-4 mr-1" />
+                                    )}
+                                    {isDownloading ? 'Downloading...' : 'Download'}
                                 </Button>
                             )}
                             {showPrint && (
