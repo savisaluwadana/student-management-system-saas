@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ClipboardCheck, FileText, Users, X } from 'lucide-react';
+import { ClipboardCheck, FileText, Users, X, ScanBarcode } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -57,12 +57,26 @@ export default async function AttendancePage({ searchParams }: AttendancePagePro
                     <h1 className="text-3xl font-bold">Attendance</h1>
                     <p className="text-muted-foreground">Track and manage student attendance</p>
                 </div>
-                <Link href="/attendance/reports">
-                    <Button variant="outline">
-                        <FileText className="mr-2 h-4 w-4" />
-                        View Reports
-                    </Button>
-                </Link>
+                <div className="flex gap-2">
+                    <Link href="/attendance/bulk">
+                        <Button variant="outline" className="gap-2">
+                            <Users className="h-4 w-4" />
+                            Bulk Attendance
+                        </Button>
+                    </Link>
+                    <Link href="/attendance/scan">
+                        <Button variant="outline" className="gap-2">
+                            <ScanBarcode className="h-4 w-4" />
+                            Scan Barcode
+                        </Button>
+                    </Link>
+                    <Link href="/attendance/reports">
+                        <Button variant="outline">
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Reports
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Stats */}
