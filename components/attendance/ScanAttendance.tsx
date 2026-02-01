@@ -149,12 +149,15 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Institute (Optional)</Label>
-                            <Select value={selectedInstitute} onValueChange={setSelectedInstitute}>
+                            <Select
+                                value={selectedInstitute || 'all'}
+                                onValueChange={(val) => setSelectedInstitute(val === 'all' ? '' : val)}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="All institutes" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All Institutes</SelectItem>
+                                    <SelectItem value="all">All Institutes</SelectItem>
                                     {institutes.map((inst) => (
                                         <SelectItem key={inst.id} value={inst.id}>
                                             {inst.name}
@@ -214,7 +217,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
 
             {/* Scanner Input */}
             <Card className={`transition-all duration-300 ${visualFeedback && lastStatus === 'success' ? 'ring-4 ring-green-500/50 bg-green-500/5' :
-                    visualFeedback && lastStatus === 'error' ? 'ring-4 ring-red-500/50 bg-red-500/5' : ''
+                visualFeedback && lastStatus === 'error' ? 'ring-4 ring-red-500/50 bg-red-500/5' : ''
                 }`}>
                 <CardContent className="py-8">
                     <div className="max-w-xl mx-auto text-center space-y-6">
