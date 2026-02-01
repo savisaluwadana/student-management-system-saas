@@ -2,8 +2,20 @@
 
 import { motion } from "framer-motion";
 import { OverviewChart } from "@/components/dashboard/OverviewChart";
+import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
+import { TopClassesWidget } from "@/components/dashboard/TopClassesWidget";
+import { OverduePaymentBanner } from "@/components/dashboard/OverduePaymentBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, GraduationCap, ArrowUpRight, Activity } from "lucide-react";
+import {
+    DollarSign,
+    Users,
+    GraduationCap,
+    ArrowUpRight,
+    Activity,
+    Video,
+    CheckCircle2,
+    AlertTriangle
+} from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 
 interface DashboardContentProps {
@@ -12,14 +24,20 @@ interface DashboardContentProps {
         totalStudents: number;
         activeClasses: number;
         totalTeachers: number;
+        totalTutorials: number;
+        attendanceRate: number;
         recentActivities: any[];
         revenueChart: any[];
+        attendanceTrend: any[];
+        topClasses: any[];
+        overduePayments: any[];
+        totalOverdueAmount: number;
     };
 }
 
 export function DashboardContent({ data }: DashboardContentProps) {
     return (
-        <div className="flex-1 space-y-8 p-4 pt-6 bg-transparent">
+        <div className="flex-1 space-y-6 p-4 pt-6 bg-transparent">
             <div className="flex items-center justify-between space-y-2">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -33,57 +51,81 @@ export function DashboardContent({ data }: DashboardContentProps) {
                         Overview of your institute's performance.
                     </p>
                 </motion.div>
-                <div className="flex items-center space-x-2">
-                    {/* Date Picker or other actions could go here */}
-                </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* Overdue Payment Banner */}
+            {data.overduePayments.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <OverduePaymentBanner
+                        overduePayments={data.overduePayments}
+                        totalOverdueAmount={data.totalOverdueAmount}
+                    />
+                </motion.div>
+            )}
+
+            {/* Stats Cards - Now 6 cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <StatsCard
                     title="Total Revenue"
                     icon={DollarSign}
                     value={formatCurrency(data.totalRevenue)}
-                    subtext="+20.1% from last month"
-                    color="text-foreground"
-                    trend="up"
+                    subtext="All time revenue"
+                    color="text-green-500"
                     delay={0.1}
                 />
                 <StatsCard
                     title="Active Students"
                     icon={Users}
-                    value={`+${data.totalStudents}`}
-                    subtext="+180.1% from last month"
-                    color="text-foreground"
-                    trend="up"
-                    delay={0.2}
+                    value={data.totalStudents.toString()}
+                    subtext="Currently enrolled"
+                    color="text-blue-500"
+                    delay={0.15}
                 />
                 <StatsCard
                     title="Active Classes"
                     icon={GraduationCap}
-                    value={`+${data.activeClasses}`}
-                    subtext="+19% from last month"
-                    color="text-foreground"
-                    trend="up"
-                    delay={0.3}
+                    value={data.activeClasses.toString()}
+                    subtext="Running classes"
+                    color="text-purple-500"
+                    delay={0.2}
                 />
                 <StatsCard
                     title="Teachers"
                     icon={Activity}
-                    value={`+${data.totalTeachers}`}
-                    subtext="+201 since last hour"
-                    color="text-foreground"
-                    trend="up"
-                    delay={0.4}
+                    value={data.totalTeachers.toString()}
+                    subtext="Teaching staff"
+                    color="text-orange-500"
+                    delay={0.25}
+                />
+                <StatsCard
+                    title="Tutorials"
+                    icon={Video}
+                    value={data.totalTutorials.toString()}
+                    subtext="Learning materials"
+                    color="text-pink-500"
+                    delay={0.3}
+                />
+                <StatsCard
+                    title="Attendance Rate"
+                    icon={CheckCircle2}
+                    value={`${data.attendanceRate}%`}
+                    subtext="30-day average"
+                    color={data.attendanceRate >= 80 ? "text-green-500" : data.attendanceRate >= 60 ? "text-yellow-500" : "text-red-500"}
+                    delay={0.35}
                 />
             </div>
 
+            {/* Charts Row */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 {/* Revenue Chart */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
                     className="col-span-4"
                 >
                     <Card className="h-full border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
@@ -97,22 +139,45 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     </Card>
                 </motion.div>
 
-                {/* Recent Activity */}
+                {/* Top Classes */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="col-span-3"
+                >
+                    <TopClassesWidget classes={data.topClasses} />
+                </motion.div>
+            </div>
+
+            {/* Attendance Trend & Recent Activity Row */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                {/* Attendance Trend Chart */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
+                    className="col-span-4"
+                >
+                    <AttendanceTrendChart data={data.attendanceTrend} />
+                </motion.div>
+
+                {/* Recent Activity */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
                     className="col-span-3"
                 >
                     <Card className="h-full border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
                         <CardHeader>
                             <CardTitle>Recent Activity</CardTitle>
                             <CardDescription>
-                                Latest transactions and system events
+                                Latest transactions and events
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-8">
+                            <div className="space-y-6">
                                 {data.recentActivities.length === 0 ? (
                                     <p className="text-sm text-muted-foreground text-center py-10">
                                         No recent activity.
@@ -123,8 +188,8 @@ export function DashboardContent({ data }: DashboardContentProps) {
                                             key={activity.id || i}
                                             className="flex items-center group"
                                         >
-                                            <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
-                                                <span className="font-bold text-foreground">
+                                            <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
+                                                <span className="font-bold text-sm text-foreground">
                                                     {activity.type === "payment"
                                                         ? "$"
                                                         : activity.type === "login"
@@ -132,15 +197,15 @@ export function DashboardContent({ data }: DashboardContentProps) {
                                                             : "S"}
                                                 </span>
                                             </div>
-                                            <div className="ml-4 space-y-1">
-                                                <p className="text-sm font-medium leading-none group-hover:underline underline-offset-4 transition-all">
+                                            <div className="ml-3 space-y-0.5 flex-1 min-w-0">
+                                                <p className="text-sm font-medium leading-none truncate">
                                                     {activity.description}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {new Date(activity.timestamp).toLocaleDateString()}
                                                 </p>
                                             </div>
-                                            <div className="ml-auto font-medium text-xs text-muted-foreground whitespace-nowrap">
+                                            <div className="ml-2 font-medium text-xs text-muted-foreground whitespace-nowrap">
                                                 {new Date(activity.timestamp).toLocaleTimeString([], {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
@@ -164,7 +229,6 @@ function StatsCard({
     value,
     subtext,
     color,
-    trend,
     delay = 0,
 }: any) {
     return (
@@ -173,29 +237,21 @@ function StatsCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay }}
         >
-            <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Icon className="h-16 w-16" />
+            <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 group cursor-default relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Icon className="h-12 w-12" />
                 </div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                         {title}
                     </CardTitle>
-                    <div
-                        className={cn(
-                            "p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800",
-                            "text-foreground"
-                        )}
-                    >
-                        <Icon className={cn("h-4 w-4")} />
+                    <div className={cn("p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800", color)}>
+                        <Icon className="h-3.5 w-3.5" />
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold tracking-tight">{value}</div>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                        {trend === "up" && (
-                            <ArrowUpRight className="h-3 w-3 mr-1 text-zinc-500" />
-                        )}
+                <CardContent className="pt-0">
+                    <div className="text-2xl font-bold tracking-tight">{value}</div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         {subtext}
                     </p>
                 </CardContent>
@@ -203,3 +259,4 @@ function StatsCard({
         </motion.div>
     );
 }
+
