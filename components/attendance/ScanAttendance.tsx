@@ -26,7 +26,9 @@ import {
     EyeOff,
     Keyboard,
     Camera,
-    User
+    User,
+    Smartphone,
+    RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,6 +46,8 @@ interface ScanResult {
     timestamp: Date;
 }
 
+type ScanMode = 'keyboard' | 'camera';
+
 export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
     const [selectedClass, setSelectedClass] = useState<string>('');
     const [selectedInstitute, setSelectedInstitute] = useState<string>('');
@@ -54,7 +58,13 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [visualFeedback, setVisualFeedback] = useState(true);
     const [lastStatus, setLastStatus] = useState<'success' | 'error' | null>(null);
+    const [scanMode, setScanMode] = useState<ScanMode>('keyboard');
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [cameraError, setCameraError] = useState<string | null>(null);
+
     const inputRef = useRef<HTMLInputElement>(null);
+    const scannerRef = useRef<any>(null);
+    const cameraViewRef = useRef<HTMLDivElement>(null);
     const successSound = useRef<HTMLAudioElement | null>(null);
     const errorSound = useRef<HTMLAudioElement | null>(null);
 
@@ -66,12 +76,21 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
         }
     }, []);
 
-    // Focus input on mount
+    // Focus input on mount for keyboard mode
     useEffect(() => {
-        inputRef.current?.focus();
+        if (scanMode === 'keyboard') {
+            inputRef.current?.focus();
+        }
+    }, [scanMode]);
+
+    // Cleanup camera on unmount
+    useEffect(() => {
+        return () => {
+            stopCamera();
+        };
     }, []);
 
-    const playSound = (type: 'success' | 'error') => {
+    const playSound = useCallback((type: 'success' | 'error') => {
         if (!soundEnabled) return;
         try {
             if (type === 'success') {
@@ -82,7 +101,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
         } catch (e) {
             // Ignore audio errors
         }
-    };
+    }, [soundEnabled]);
 
     const handleScan = useCallback(async (barcode: string) => {
         if (!selectedClass || !barcode.trim() || isProcessing) return;
@@ -123,15 +142,80 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
             setTimeout(() => setLastStatus(null), 1000);
         } finally {
             setIsProcessing(false);
-            inputRef.current?.focus();
+            if (scanMode === 'keyboard') {
+                inputRef.current?.focus();
+            }
         }
-    }, [selectedClass, date, isProcessing, soundEnabled]);
+    }, [selectedClass, date, isProcessing, playSound, scanMode]);
+
+    const startCamera = async () => {
+        if (!selectedClass) {
+            setCameraError('Please select a class first');
+            return;
+        }
+
+        setCameraError(null);
+
+        try {
+            // Dynamic import to avoid SSR issues
+            const { Html5Qrcode } = await import('html5-qrcode');
+
+            if (!cameraViewRef.current) return;
+
+            // Create scanner instance
+            const scanner = new Html5Qrcode('camera-view');
+            scannerRef.current = scanner;
+
+            await scanner.start(
+                { facingMode: 'environment' }, // Rear camera
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                },
+                (decodedText) => {
+                    // On successful scan
+                    handleScan(decodedText);
+                },
+                () => {
+                    // Ignore errors during scanning
+                }
+            );
+
+            setIsCameraActive(true);
+        } catch (err: any) {
+            console.error('Camera error:', err);
+            setCameraError(err.message || 'Failed to start camera. Please check permissions.');
+            setIsCameraActive(false);
+        }
+    };
+
+    const stopCamera = async () => {
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.stop();
+                scannerRef.current.clear();
+            } catch (e) {
+                // Ignore cleanup errors
+            }
+            scannerRef.current = null;
+        }
+        setIsCameraActive(false);
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && barcodeInput.trim()) {
             e.preventDefault();
             handleScan(barcodeInput);
         }
+    };
+
+    const toggleScanMode = async (mode: ScanMode) => {
+        if (mode === scanMode) return;
+
+        if (mode === 'keyboard') {
+            await stopCamera();
+        }
+        setScanMode(mode);
     };
 
     const successCount = scanResults.filter((r) => r.success).length;
@@ -215,41 +299,133 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                 </CardContent>
             </Card>
 
+            {/* Scan Mode Toggle */}
+            <div className="flex gap-2 justify-center">
+                <Button
+                    variant={scanMode === 'keyboard' ? 'default' : 'outline'}
+                    onClick={() => toggleScanMode('keyboard')}
+                    className="gap-2"
+                >
+                    <Keyboard className="h-4 w-4" />
+                    USB Scanner / Keyboard
+                </Button>
+                <Button
+                    variant={scanMode === 'camera' ? 'default' : 'outline'}
+                    onClick={() => toggleScanMode('camera')}
+                    className="gap-2"
+                >
+                    <Smartphone className="h-4 w-4" />
+                    Mobile Camera
+                </Button>
+            </div>
+
             {/* Scanner Input */}
             <Card className={`transition-all duration-300 ${visualFeedback && lastStatus === 'success' ? 'ring-4 ring-green-500/50 bg-green-500/5' :
                 visualFeedback && lastStatus === 'error' ? 'ring-4 ring-red-500/50 bg-red-500/5' : ''
                 }`}>
                 <CardContent className="py-8">
-                    <div className="max-w-xl mx-auto text-center space-y-6">
-                        <div className="h-24 w-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                            <ScanBarcode className={`h-12 w-12 text-primary ${isProcessing ? 'animate-pulse' : ''}`} />
-                        </div>
+                    {scanMode === 'keyboard' ? (
+                        <div className="max-w-xl mx-auto text-center space-y-6">
+                            <div className="h-24 w-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                                <ScanBarcode className={`h-12 w-12 text-primary ${isProcessing ? 'animate-pulse' : ''}`} />
+                            </div>
 
-                        <div>
-                            <h3 className="text-xl font-semibold mb-2">Scan Student Barcode</h3>
-                            <p className="text-muted-foreground">
-                                Use a barcode scanner or type the barcode manually and press Enter
-                            </p>
-                        </div>
+                            <div>
+                                <h3 className="text-xl font-semibold mb-2">USB Scanner / Keyboard Mode</h3>
+                                <p className="text-muted-foreground">
+                                    Connect a USB barcode scanner or type the barcode manually and press Enter
+                                </p>
+                            </div>
 
-                        <div className="relative">
-                            <Input
-                                ref={inputRef}
-                                type="text"
-                                placeholder="Scan or enter barcode..."
-                                value={barcodeInput}
-                                onChange={(e) => setBarcodeInput(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                disabled={!selectedClass || isProcessing}
-                                className="text-center text-lg h-14 font-mono"
-                            />
-                            <Keyboard className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        </div>
+                            <div className="relative">
+                                <Input
+                                    ref={inputRef}
+                                    type="text"
+                                    placeholder="Scan or enter barcode..."
+                                    value={barcodeInput}
+                                    onChange={(e) => setBarcodeInput(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    disabled={!selectedClass || isProcessing}
+                                    className="text-center text-lg h-14 font-mono"
+                                    autoFocus
+                                />
+                                <Keyboard className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            </div>
 
-                        {!selectedClass && (
-                            <p className="text-sm text-yellow-600">Please select a class before scanning</p>
-                        )}
-                    </div>
+                            {!selectedClass && (
+                                <p className="text-sm text-yellow-600">Please select a class before scanning</p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="max-w-xl mx-auto text-center space-y-6">
+                            <div>
+                                <h3 className="text-xl font-semibold mb-2 flex items-center justify-center gap-2">
+                                    <Camera className="h-6 w-6" />
+                                    Mobile Camera Mode
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    Point your camera at a student's barcode to scan
+                                </p>
+                            </div>
+
+                            {/* Camera View */}
+                            <div
+                                id="camera-view"
+                                ref={cameraViewRef}
+                                className="w-full max-w-md mx-auto aspect-video bg-black rounded-xl overflow-hidden relative"
+                            >
+                                {!isCameraActive && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-4">
+                                        <Camera className="h-16 w-16 opacity-50" />
+                                        <Button
+                                            onClick={startCamera}
+                                            disabled={!selectedClass}
+                                            size="lg"
+                                            className="gap-2"
+                                        >
+                                            <Camera className="h-5 w-5" />
+                                            Start Camera
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {cameraError && (
+                                <div className="text-red-500 text-sm flex items-center justify-center gap-2">
+                                    <XCircle className="h-4 w-4" />
+                                    {cameraError}
+                                </div>
+                            )}
+
+                            {isCameraActive && (
+                                <div className="flex gap-2 justify-center">
+                                    <Button
+                                        variant="outline"
+                                        onClick={stopCamera}
+                                        className="gap-2"
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                        Stop Camera
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={async () => {
+                                            await stopCamera();
+                                            await startCamera();
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Restart
+                                    </Button>
+                                </div>
+                            )}
+
+                            {!selectedClass && (
+                                <p className="text-sm text-yellow-600">Please select a class before scanning</p>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -286,41 +462,44 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                     <CardContent className="p-0">
                         <div className="divide-y max-h-96 overflow-y-auto">
                             <AnimatePresence>
-                                {scanResults.map((result) => (
-                                    <motion.div
-                                        key={result.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        className={`flex items-center justify-between p-4 ${result.success ? 'bg-green-500/5' : 'bg-red-500/5'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${result.success ? 'bg-green-500/20' : 'bg-red-500/20'
-                                                }`}>
-                                                {result.success ? (
-                                                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                ) : (
-                                                    <XCircle className="h-5 w-5 text-red-500" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                    <p className="font-medium">{result.studentName}</p>
+                                {scanResults.map((result) => {
+                                    const timeStr = `${result.timestamp.getUTCHours().toString().padStart(2, '0')}:${result.timestamp.getUTCMinutes().toString().padStart(2, '0')}:${result.timestamp.getUTCSeconds().toString().padStart(2, '0')}`;
+                                    return (
+                                        <motion.div
+                                            key={result.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className={`flex items-center justify-between p-4 ${result.success ? 'bg-green-500/5' : 'bg-red-500/5'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${result.success ? 'bg-green-500/20' : 'bg-red-500/20'
+                                                    }`}>
+                                                    {result.success ? (
+                                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                    ) : (
+                                                        <XCircle className="h-5 w-5 text-red-500" />
+                                                    )}
                                                 </div>
-                                                <p className="text-sm text-muted-foreground font-mono">{result.barcode}</p>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="h-4 w-4 text-muted-foreground" />
+                                                        <p className="font-medium">{result.studentName}</p>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground font-mono">{result.barcode}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <Badge variant={result.success ? 'default' : 'destructive'}>
-                                                {result.message}
-                                            </Badge>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {result.timestamp.toLocaleTimeString()}
-                                            </p>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                            <div className="text-right">
+                                                <Badge variant={result.success ? 'default' : 'destructive'}>
+                                                    {result.message}
+                                                </Badge>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {timeStr}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
                             </AnimatePresence>
                         </div>
                     </CardContent>
