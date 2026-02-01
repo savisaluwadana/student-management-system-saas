@@ -1,4 +1,5 @@
 export type StudentStatus = 'active' | 'inactive' | 'suspended' | 'graduated';
+export type Gender = 'male' | 'female' | 'other';
 
 export interface Student {
   id: string;
@@ -16,6 +17,13 @@ export interface Student {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // New fields
+  institute_id: string | null;
+  gender: Gender | null;
+  school: string | null;
+  whatsapp_phone: string | null;
+  barcode: string | null;
+  photo_url: string | null;
   enrollments?: {
     class: {
       id: string;
@@ -23,6 +31,11 @@ export interface Student {
       class_code: string;
     };
   }[];
+  institute?: {
+    id: string;
+    name: string;
+    code: string;
+  };
 }
 
 export interface CreateStudentInput {
@@ -39,6 +52,12 @@ export interface CreateStudentInput {
   status?: StudentStatus;
   notes?: string;
   class_ids?: string[];
+  // New fields
+  institute_id?: string;
+  gender?: Gender;
+  school?: string;
+  whatsapp_phone?: string;
+  photo_url?: string;
 }
 
 export interface UpdateStudentInput {
@@ -54,4 +73,11 @@ export interface UpdateStudentInput {
   status?: StudentStatus;
   notes?: string;
   class_ids?: string[];
+  // New fields
+  institute_id?: string;
+  gender?: Gender;
+  school?: string;
+  whatsapp_phone?: string;
+  photo_url?: string;
 }
+
