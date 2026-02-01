@@ -2,7 +2,7 @@ import { getStudents } from '@/lib/actions/students';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Plus, Upload, Download } from 'lucide-react';
+import { Plus, Upload, Download, QrCode } from 'lucide-react';
 import { StudentTable } from '@/components/students/StudentTable';
 import { ExportStudentsButton } from '@/components/students/ExportStudentsButton';
 
@@ -17,6 +17,12 @@ export default async function StudentsPage() {
           <p className="text-muted-foreground">Manage your students</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/students/barcodes">
+            <Button variant="outline">
+              <QrCode className="mr-2 h-4 w-4" />
+              Barcodes
+            </Button>
+          </Link>
           <ExportStudentsButton />
           <Link href="/students/import">
             <Button variant="outline">
