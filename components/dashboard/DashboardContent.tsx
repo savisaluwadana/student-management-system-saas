@@ -183,36 +183,39 @@ export function DashboardContent({ data }: DashboardContentProps) {
                                         No recent activity.
                                     </p>
                                 ) : (
-                                    data.recentActivities.map((activity, i) => (
-                                        <div
-                                            key={activity.id || i}
-                                            className="flex items-center group"
-                                        >
-                                            <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
-                                                <span className="font-bold text-sm text-foreground">
-                                                    {activity.type === "payment"
-                                                        ? "$"
-                                                        : activity.type === "login"
-                                                            ? "L"
-                                                            : "S"}
-                                                </span>
+                                    data.recentActivities.map((activity, i) => {
+                                        const date = new Date(activity.timestamp);
+                                        const dateStr = `${date.getUTCDate().toString().padStart(2, '0')}/${(date.getUTCMonth() + 1).toString().padStart(2, '0')}/${date.getUTCFullYear()}`;
+                                        const timeStr = `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
+
+                                        return (
+                                            <div
+                                                key={activity.id || i}
+                                                className="flex items-center group"
+                                            >
+                                                <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
+                                                    <span className="font-bold text-sm text-foreground">
+                                                        {activity.type === "payment"
+                                                            ? "$"
+                                                            : activity.type === "login"
+                                                                ? "L"
+                                                                : "S"}
+                                                    </span>
+                                                </div>
+                                                <div className="ml-3 space-y-0.5 flex-1 min-w-0">
+                                                    <p className="text-sm font-medium leading-none truncate">
+                                                        {activity.description}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {dateStr}
+                                                    </p>
+                                                </div>
+                                                <div className="ml-2 font-medium text-xs text-muted-foreground whitespace-nowrap">
+                                                    {timeStr}
+                                                </div>
                                             </div>
-                                            <div className="ml-3 space-y-0.5 flex-1 min-w-0">
-                                                <p className="text-sm font-medium leading-none truncate">
-                                                    {activity.description}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {new Date(activity.timestamp).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                            <div className="ml-2 font-medium text-xs text-muted-foreground whitespace-nowrap">
-                                                {new Date(activity.timestamp).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </CardContent>
