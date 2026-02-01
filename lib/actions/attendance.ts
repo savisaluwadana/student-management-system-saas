@@ -337,3 +337,155 @@ export async function getStudentAttendanceHistory(
 
     return data || [];
 }
+
+/**
+ * Mark bulk attendance for multiple students at once
+ */
+export async function markBulkAttendance(
+    classId: string,
+    date: string,
+    records: Array<{ student_id: string; status: AttendanceStatus }>
+): Promise<{ success: boolean; error?: string; count?: number }> {
+    const supabase = await createClient();
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Prepare upsert data
+    const attendanceData = records.map((record) => ({
+        class_id: classId,
+        student_id: record.student_id,
+        date: date,
+        status: record.status,
+        marked_by: user?.id,
+    }));
+
+    // Upsert attendance records
+    const { error } = await supabase
+        .from('attendance')
+        .upsert(attendanceData, {
+            onConflict: 'class_id,student_id,date',
+        });
+
+    if (error) {
+        console.error('Error marking bulk attendance:', error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath('/attendance');
+    revalidatePath('/attendance/bulk');
+    return { success: true, count: records.length };
+}
+
+/**
+ * Mark attendance using barcode (scan mode)
+ */
+export async function markAttendanceByBarcode(
+    classId: string,
+    date: string,
+    barcode: string
+): Promise<{ success: boolean; message?: string; studentName?: string }> {
+    const supabase = await createClient();
+
+    // Find student by barcode or student_code
+    const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id, student_code, full_name, barcode')
+        .or(`barcode.eq.${barcode},student_code.eq.${barcode}`)
+        .single();
+
+    if (studentError || !student) {
+        return { success: false, message: 'Student not found' };
+    }
+
+    // Check if student is enrolled in this class
+    const { data: enrollment, error: enrollmentError } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('student_id', student.id)
+        .eq('class_id', classId)
+        .eq('status', 'active')
+        .single();
+
+    if (enrollmentError || !enrollment) {
+        return {
+            success: false,
+            message: 'Not enrolled in class',
+            studentName: student.full_name
+        };
+    }
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Mark attendance as present
+    const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert({
+            class_id: classId,
+            student_id: student.id,
+            date: date,
+            status: 'present',
+            marked_by: user?.id,
+        }, {
+            onConflict: 'class_id,student_id,date',
+        });
+
+    if (attendanceError) {
+        return {
+            success: false,
+            message: 'Failed to mark',
+            studentName: student.full_name
+        };
+    }
+
+    revalidatePath('/attendance');
+    revalidatePath('/attendance/scan');
+
+    return {
+        success: true,
+        message: 'Marked present',
+        studentName: student.full_name
+    };
+}
+
+/**
+ * Get 30-day attendance trend data for analytics
+ */
+export async function getAttendanceTrend(): Promise<Array<{
+    date: string;
+    present: number;
+    absent: number;
+    late: number;
+    total: number;
+}>> {
+    const supabase = await createClient();
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await supabase
+        .from('attendance')
+        .select('date, status')
+        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching attendance trend:', error);
+        return [];
+    }
+
+    // Group by date
+    const grouped = (data || []).reduce((acc: any, record) => {
+        if (!acc[record.date]) {
+            acc[record.date] = { date: record.date, present: 0, absent: 0, late: 0, total: 0 };
+        }
+        acc[record.date].total++;
+        if (record.status === 'present') acc[record.date].present++;
+        else if (record.status === 'absent') acc[record.date].absent++;
+        else if (record.status === 'late') acc[record.date].late++;
+        return acc;
+    }, {});
+
+    return Object.values(grouped);
+}

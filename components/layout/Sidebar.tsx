@@ -14,16 +14,22 @@ import {
   LayoutDashboard,
   UserCog,
   LogOut,
-  Sparkles
+  Sparkles,
+  Building2,
+  Clock,
+  Video
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Institutes', href: '/institutes', icon: Building2 },
   { name: 'Students', href: '/students', icon: Users },
   { name: 'Teachers', href: '/teachers', icon: UserCog },
   { name: 'Classes', href: '/classes', icon: BookOpen },
+  { name: 'Sessions', href: '/sessions', icon: Clock },
   { name: 'Attendance', href: '/attendance', icon: ClipboardCheck },
+  { name: 'Tutorials', href: '/tutorials', icon: Video },
   { name: 'Assessments', href: '/assessments', icon: GraduationCap },
   { name: 'Payments', href: '/payments', icon: DollarSign },
   { name: 'Communications', href: '/communications', icon: MessageSquare },
