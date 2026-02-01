@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Barcode from 'react-barcode';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, GraduationCap } from 'lucide-react';
+import { Download, Printer, GraduationCap, Loader2 } from 'lucide-react';
 
 interface SmartCardProps {
   student: {
@@ -23,6 +23,36 @@ interface SmartCardProps {
 
 export function SmartCard({ student, instituteName, instituteCode }: SmartCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!cardRef.current || isDownloading) return;
+
+    setIsDownloading(true);
+
+    try {
+      // Dynamic import to avoid SSR issues
+      const html2canvas = (await import('html2canvas')).default;
+
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2, // Higher quality
+        backgroundColor: null,
+        useCORS: true,
+        logging: false,
+      });
+
+      // Convert to download link
+      const link = document.createElement('a');
+      link.download = `${student.student_code}-id-card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error downloading card:', error);
+      alert('Failed to download card. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePrint = () => {
     if (!cardRef.current) return;
@@ -232,9 +262,19 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
             <Printer className="h-4 w-4 mr-1" />
             Print Card
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Download className="h-4 w-4 mr-1" />
-            Download
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex-1"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-1" />
+            )}
+            {isDownloading ? 'Downloading...' : 'Download'}
           </Button>
         </div>
       </CardContent>
