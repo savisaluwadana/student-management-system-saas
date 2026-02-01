@@ -31,8 +31,9 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
     setIsDownloading(true);
 
     try {
-      // Dynamic import to avoid SSR issues
+      // Dynamic imports to avoid SSR issues
       const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
 
       const canvas = await html2canvas(cardRef.current, {
         scale: 2, // Higher quality
@@ -41,11 +42,19 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
         logging: false,
       });
 
-      // Convert to download link
-      const link = document.createElement('a');
-      link.download = `${student.student_code}-id-card.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // Create PDF with credit card dimensions (85.6mm x 53.98mm)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [85.6, 53.98]
+      });
+
+      // Add the image to PDF, fitting to the page
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, 85.6, 53.98);
+
+      // Download the PDF
+      pdf.save(`${student.student_code}-id-card.pdf`);
     } catch (error) {
       console.error('Error downloading card:', error);
       alert('Failed to download card. Please try again.');
@@ -53,6 +62,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
       setIsDownloading(false);
     }
   };
+
 
   const handlePrint = () => {
     if (!cardRef.current) return;
