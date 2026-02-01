@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Barcode from 'react-barcode';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,19 @@ export function StudentBarcode({
     showPrint = true,
     size = 'medium',
 }: StudentBarcodeProps) {
-    const barcodeRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const sizeConfig = sizes[size];
+    const barcodeId = `barcode-${studentCode}`;
 
     const handleDownload = async () => {
-        if (!barcodeRef.current || isDownloading) return;
+        if (isDownloading) return;
+
+        const barcodeElement = document.getElementById(barcodeId);
+        if (!barcodeElement) {
+            console.error('Barcode element not found:', barcodeId);
+            alert('Could not find barcode element. Please try again.');
+            return;
+        }
 
         setIsDownloading(true);
 
@@ -43,7 +50,7 @@ export function StudentBarcode({
             const html2canvas = (await import('html2canvas')).default;
             const { jsPDF } = await import('jspdf');
 
-            const canvas = await html2canvas(barcodeRef.current, {
+            const canvas = await html2canvas(barcodeElement, {
                 scale: 2,
                 backgroundColor: '#ffffff',
                 useCORS: true,
@@ -69,15 +76,25 @@ export function StudentBarcode({
         }
     };
 
-
     const handlePrint = () => {
-        if (!barcodeRef.current) return;
+        const barcodeElement = document.getElementById(barcodeId);
+        if (!barcodeElement) {
+            alert('Could not find barcode element.');
+            return;
+        }
 
         const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
+        if (!printWindow) {
+            alert('Please allow popups to print.');
+            return;
+        }
 
-        const svg = barcodeRef.current.querySelector('svg');
-        if (!svg) return;
+        const svg = barcodeElement.querySelector('svg');
+        if (!svg) {
+            alert('Could not find barcode SVG.');
+            printWindow.close();
+            return;
+        }
 
         printWindow.document.write(`
       <!DOCTYPE html>
@@ -144,7 +161,7 @@ export function StudentBarcode({
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col items-center space-y-4">
-                    <div ref={barcodeRef} className="bg-white p-4 rounded-lg">
+                    <div id={barcodeId} className="bg-white p-4 rounded-lg">
                         <Barcode
                             value={barcode}
                             width={sizeConfig.width}

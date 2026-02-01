@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Barcode from 'react-barcode';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,18 @@ interface SmartCardProps {
 }
 
 export function SmartCard({ student, instituteName, instituteCode }: SmartCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const cardId = `smart-card-${student.id}`;
 
   const handleDownload = async () => {
-    if (!cardRef.current || isDownloading) return;
+    if (isDownloading) return;
+
+    const cardElement = document.getElementById(cardId);
+    if (!cardElement) {
+      console.error('Card element not found:', cardId);
+      alert('Could not find card element. Please try again.');
+      return;
+    }
 
     setIsDownloading(true);
 
@@ -35,9 +42,9 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Higher quality
-        backgroundColor: null,
+      const canvas = await html2canvas(cardElement, {
+        scale: 2,
+        backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
       });
@@ -49,7 +56,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
         format: [85.6, 53.98]
       });
 
-      // Add the image to PDF, fitting to the page
+      // Add the image to PDF
       const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', 0, 0, 85.6, 53.98);
 
@@ -63,12 +70,12 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
     }
   };
 
-
   const handlePrint = () => {
-    if (!cardRef.current) return;
-
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (!printWindow) {
+      alert('Please allow popups to print the card.');
+      return;
+    }
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -166,9 +173,6 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
               padding: 4px 8px;
               border-radius: 4px;
             }
-            .barcode-container svg {
-              display: block;
-            }
             @media print {
               body { background: white; }
               .card { box-shadow: none; }
@@ -193,9 +197,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
             </div>
             ${student.barcode ? `
               <div class="barcode-container">
-                <svg width="100" height="30">
-                  <text x="50" y="20" text-anchor="middle" font-size="8" font-family="monospace">${student.barcode}</text>
-                </svg>
+                <span style="font-family: monospace; font-size: 10px;">${student.barcode}</span>
               </div>
             ` : ''}
           </div>
@@ -214,7 +216,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
   return (
     <Card className="overflow-hidden">
       <div
-        ref={cardRef}
+        id={cardId}
         className="relative w-full aspect-[1.586/1] max-w-[340px] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-5 text-white"
       >
         {/* Background decoration */}
