@@ -1,14 +1,17 @@
 import { getStudentById } from '@/lib/actions/students';
 import { getStudentAttendanceHistory } from '@/lib/actions/attendance';
+import { getStudentReportCard } from '@/lib/actions/assessments';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentForm } from '@/components/students/StudentForm';
 import { StudentAttendanceView } from '@/components/students/StudentAttendanceView';
+import { StudentGradesView } from '@/components/students/StudentGradesView';
 import { notFound } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function StudentDetailPage({ params }: { params: { id: string } }) {
   const student = await getStudentById(params.id);
   const attendanceHistory = await getStudentAttendanceHistory(params.id);
+  const reportCard = await getStudentReportCard(params.id);
 
   if (!student) {
     notFound();
@@ -27,6 +30,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
         <TabsList>
           <TabsTrigger value="profile">Profile Details</TabsTrigger>
           <TabsTrigger value="attendance">Attendance History</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -45,6 +49,10 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
         <TabsContent value="attendance">
           <StudentAttendanceView history={attendanceHistory} />
+        </TabsContent>
+
+        <TabsContent value="grades">
+          <StudentGradesView grades={reportCard as any} />
         </TabsContent>
       </Tabs>
     </div>
