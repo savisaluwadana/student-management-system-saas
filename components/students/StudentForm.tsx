@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -156,11 +157,16 @@ export function StudentForm({ student }: StudentFormProps) {
           <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
             {photoPreview ? (
               <>
-                <img src={photoPreview} alt="Student Photo" className="w-full h-full object-cover" />
+                <Image
+                  src={photoPreview}
+                  alt="Student Photo"
+                  fill
+                  className="object-cover"
+                />
                 <button
                   type="button"
                   onClick={removePhoto}
-                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
                 >
                   <X className="h-3 w-3" />
                 </button>

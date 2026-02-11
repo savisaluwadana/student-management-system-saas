@@ -364,7 +364,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                                     Mobile Camera Mode
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    Point your camera at a student's barcode to scan
+                                    Point your camera at a student&apos;s barcode to scan
                                 </p>
                             </div>
 

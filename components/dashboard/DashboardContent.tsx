@@ -49,7 +49,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                         Dashboard
                     </h2>
                     <p className="text-muted-foreground mt-1">
-                        Overview of your institute's performance.
+                        Overview of your institute&apos;s performance.
                     </p>
                 </motion.div>
             </div>

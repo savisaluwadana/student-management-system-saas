@@ -108,7 +108,7 @@ export default async function AttendancePage({ searchParams }: AttendancePagePro
                                     <TableHead>Class Name</TableHead>
                                     <TableHead>Subject</TableHead>
                                     <TableHead>Students</TableHead>
-                                    <TableHead>Today's Status</TableHead>
+                                    <TableHead>Today&apos;s Status</TableHead>
                                     <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>

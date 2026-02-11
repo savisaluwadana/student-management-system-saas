@@ -146,13 +146,16 @@ export async function createTutorial(formData: FormData) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    const classId = formData.get('class_id') as string;
+    const instituteId = formData.get('institute_id') as string;
+
     const tutorialData = {
         title: formData.get('title') as string,
         description: formData.get('description') as string || null,
         content_url: formData.get('content_url') as string || null,
         content_type: formData.get('content_type') as string || null,
-        class_id: formData.get('class_id') as string || null,
-        institute_id: formData.get('institute_id') as string || null,
+        class_id: (classId && classId !== 'none') ? classId : null,
+        institute_id: (instituteId && instituteId !== 'none') ? instituteId : null,
         is_public: formData.get('is_public') === 'true',
         created_by: user?.id || null,
     };
@@ -176,13 +179,16 @@ export async function createTutorial(formData: FormData) {
 export async function updateTutorial(id: string, formData: FormData) {
     const supabase = await createClient();
 
+    const classId = formData.get('class_id') as string;
+    const instituteId = formData.get('institute_id') as string;
+
     const tutorialData = {
         title: formData.get('title') as string,
         description: formData.get('description') as string || null,
         content_url: formData.get('content_url') as string || null,
         content_type: formData.get('content_type') as string || null,
-        class_id: formData.get('class_id') as string || null,
-        institute_id: formData.get('institute_id') as string || null,
+        class_id: (classId && classId !== 'none') ? classId : null,
+        institute_id: (instituteId && instituteId !== 'none') ? instituteId : null,
         is_public: formData.get('is_public') === 'true',
     };
 
