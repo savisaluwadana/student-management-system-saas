@@ -15,6 +15,10 @@ export interface FeePayment {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  students?: {
+    full_name: string;
+    student_code: string;
+  };
 }
 
 export interface CreatePaymentInput {

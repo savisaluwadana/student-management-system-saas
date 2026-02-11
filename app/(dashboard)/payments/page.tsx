@@ -4,6 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PaymentForm } from '@/components/payments/PaymentForm';
+import { Button } from '@/components/ui/button';
+import { Edit } from 'lucide-react';
 
 export default async function PaymentsPage() {
   const payments = await getPayments();
@@ -94,26 +96,22 @@ export default async function PaymentsPage() {
                     <TableHead>Month</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Method</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {payments.slice(0, 10).map((payment) => (
-                    <TableRow key={payment.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <TableRow key={payment.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(payment.status) as any} className="capitalize shadow-sm">
                           {payment.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {/* We might need to join student name here if not already joined in action. 
-                            Assuming action returns joined data or we use client component to fetch. 
-                            For now using ID or joined field if available. 
-                            Checking types... Action returns FeePayment which likely has student relation joined if setup.
-                            Let's assume backend returns basic info, might need enhancement later.
-                        */}
-                        <span className="font-mono text-xs text-muted-foreground mr-2">
-                          {payment.student_id ? payment.student_id.slice(0, 6) : 'N/A'}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{payment.students?.full_name || 'Unknown'}</span>
+                          <span className="text-xs text-muted-foreground">{payment.students?.student_code || 'N/A'}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="font-bold text-gray-900 dark:text-gray-100">
                         {formatCurrency(payment.amount)}
@@ -124,6 +122,16 @@ export default async function PaymentsPage() {
                       </TableCell>
                       <TableCell className="text-right capitalize text-muted-foreground">
                         {payment.payment_method?.replace('_', ' ') || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <PaymentForm
+                          payment={payment}
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
