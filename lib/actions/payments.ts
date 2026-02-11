@@ -15,12 +15,19 @@ export async function recordPayment(input: CreatePaymentInput): Promise<{ succes
 /**
  * Get all payments with optional filtering
  */
-export async function getPayments(status?: string): Promise<FeePayment[]> {
+export async function getPayments(status?: string) {
   const supabase = await createClient();
 
   let query = supabase
     .from('fee_payments')
-    .select('*')
+    .select(`
+      *,
+      students (
+        id,
+        full_name,
+        student_code
+      )
+    `)
     .order('created_at', { ascending: false });
 
   if (status) {
@@ -49,6 +56,26 @@ export async function createPayment(input: CreatePaymentInput): Promise<{ succes
 
   if (error) {
     console.error('Error creating payment:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/payments');
+  return { success: true };
+}
+
+/**
+ * Update a payment
+ */
+export async function updatePayment(id: string, input: Partial<CreatePaymentInput>): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('fee_payments')
+    .update(input)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating payment:', error);
     return { success: false, error: error.message };
   }
 

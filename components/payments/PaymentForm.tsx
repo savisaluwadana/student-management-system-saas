@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react"
+import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
@@ -49,9 +49,10 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command"
-import { recordPayment } from "@/lib/actions/payments"
+import { recordPayment, updatePayment } from "@/lib/actions/payments"
 import { getStudents } from "@/lib/actions/students"
 import { toast } from "@/components/ui/use-toast"
+import { FeePayment } from "@/types/payment.types"
 
 const formSchema = z.object({
     student_id: z.string({
@@ -65,27 +66,37 @@ const formSchema = z.object({
         required_error: "Please select a payment method.",
     }),
     notes: z.string().optional(),
+    status: z.string().optional(),
 })
 
-export function PaymentForm() {
+interface PaymentFormProps {
+    payment?: any; // Using any for now as the type from action might differ slightly from FeePayment
+    trigger?: React.ReactNode;
+}
+
+export function PaymentForm({ payment, trigger }: PaymentFormProps) {
     const [open, setOpen] = useState(false)
     const [students, setStudents] = useState<{ id: string; full_name: string; student_code: string }[]>([])
     const [studentSearchOpen, setStudentSearchOpen] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const isEdit = !!payment
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            amount: 0,
-            notes: "",
+            student_id: payment?.student_id || "",
+            amount: payment?.amount || 0,
+            payment_month: payment?.payment_month ? new Date(payment.payment_month) : new Date(),
+            payment_method: payment?.payment_method || "",
+            notes: payment?.notes || "",
+            status: payment?.status || "paid",
         },
     })
 
     useEffect(() => {
         async function loadStudents() {
-            // We might need to implement getAllStudents or similar efficient search
-            // For now assuming we can fetch basic list. Ideally this should be server-side searched in Command
             try {
-                // Fetch students directly
                 const res = await getStudents();
                 setStudents(res);
             } catch (e) {
@@ -97,31 +108,59 @@ export function PaymentForm() {
         }
     }, [open])
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        try {
-            const result = await recordPayment({
-                student_id: values.student_id,
-                amount: values.amount,
-                payment_month: values.payment_month.toISOString(), // simplified for now
-                due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(), // End of current month default
-                status: "paid", // Automatically mark as paid for manual entry
-                payment_method: values.payment_method as any,
-                payment_date: new Date().toISOString(),
-                notes: values.notes,
+    // Reset form when payment prop changes
+    useEffect(() => {
+        if (payment) {
+            form.reset({
+                student_id: payment.student_id,
+                amount: payment.amount,
+                payment_month: new Date(payment.payment_month),
+                payment_method: payment.payment_method || "",
+                notes: payment.notes || "",
+                status: payment.status || "paid",
             })
+        }
+    }, [payment, form])
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        setIsSubmitting(true)
+        try {
+            let result;
+
+            if (isEdit) {
+                result = await updatePayment(payment.id, {
+                    student_id: values.student_id,
+                    amount: values.amount,
+                    payment_month: values.payment_month.toISOString(),
+                    payment_method: values.payment_method as any,
+                    status: values.status as any,
+                    notes: values.notes,
+                })
+            } else {
+                result = await recordPayment({
+                    student_id: values.student_id,
+                    amount: values.amount,
+                    payment_month: values.payment_month.toISOString(),
+                    due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
+                    status: "paid",
+                    payment_method: values.payment_method as any,
+                    payment_date: new Date().toISOString(),
+                    notes: values.notes,
+                })
+            }
 
             if (result.success) {
                 toast({
-                    title: "Payment Recorded",
-                    description: "The payment has been successfully recorded.",
+                    title: isEdit ? "Payment Updated" : "Payment Recorded",
+                    description: isEdit ? "The payment details have been updated." : "The payment has been successfully recorded.",
                 })
                 setOpen(false)
-                form.reset()
+                if (!isEdit) form.reset()
             } else {
                 toast({
                     variant: "destructive",
                     title: "Error",
-                    description: result.error || "Failed to record payment.",
+                    description: result.error || "Failed to save payment.",
                 })
             }
         } catch (error) {
@@ -130,21 +169,25 @@ export function PaymentForm() {
                 title: "Error",
                 description: "Something went wrong.",
             })
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                    Record Payment
-                </Button>
+                {trigger || (
+                    <Button className="shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                        Record Payment
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Record Manual Payment</DialogTitle>
+                    <DialogTitle>{isEdit ? "Edit Payment" : "Record Manual Payment"}</DialogTitle>
                     <DialogDescription>
-                        Enter payment details for a student. This will record it as immediately paid.
+                        {isEdit ? "Update payment details." : "Enter payment details for a student."}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -166,6 +209,7 @@ export function PaymentForm() {
                                                         "w-full justify-between",
                                                         !field.value && "text-muted-foreground"
                                                     )}
+                                                    disabled={isEdit} // Disable student selection on edit to prevent accidental swaps
                                                 >
                                                     {field.value
                                                         ? students.find((student) => student.id === field.value)?.full_name
@@ -247,50 +291,76 @@ export function PaymentForm() {
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="payment_month"
-                            render={({ field }: { field: any }) => (
-                                <FormItem className="flex flex-col">
-                                    <FormLabel>Payment Month</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button
-                                                    variant={"outline"}
-                                                    className={cn(
-                                                        "w-full pl-3 text-left font-normal",
-                                                        !field.value && "text-muted-foreground"
-                                                    )}
-                                                >
-                                                    {field.value ? (
-                                                        format(field.value, "PPP")
-                                                    ) : (
-                                                        <span>Pick a date</span>
-                                                    )}
-                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value}
-                                                onSelect={field.onChange}
-                                                disabled={(date: Date) =>
-                                                    date > new Date() || date < new Date("1900-01-01")
-                                                }
-                                                initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <FormDescription>
-                                        The month this payment applies to.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="payment_month"
+                                render={({ field }: { field: any }) => (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Payment Month</FormLabel>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-full pl-3 text-left font-normal",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {field.value ? (
+                                                            format(field.value, "MMM yyyy")
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
+                                                    disabled={(date: Date) =>
+                                                        date > new Date(new Date().setFullYear(new Date().getFullYear() + 1)) || date < new Date("1900-01-01")
+                                                    }
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {isEdit && (
+                                <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }: { field: any }) => (
+                                        <FormItem>
+                                            <FormLabel>Status</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="paid">Paid</SelectItem>
+                                                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                                                    <SelectItem value="overdue">Overdue</SelectItem>
+                                                    <SelectItem value="partial">Partial</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             )}
-                        />
+                        </div>
+
                         <FormField
                             control={form.control}
                             name="notes"
@@ -305,7 +375,10 @@ export function PaymentForm() {
                             )}
                         />
                         <DialogFooter>
-                            <Button type="submit">Record Payment</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isEdit ? "Update Payment" : "Record Payment"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
