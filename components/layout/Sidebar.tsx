@@ -17,7 +17,8 @@ import {
   Sparkles,
   Building2,
   Clock,
-  Video
+  Video,
+  FileText
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Assessments', href: '/assessments', icon: GraduationCap },
   { name: 'Payments', href: '/payments', icon: DollarSign },
   { name: 'Communications', href: '/communications', icon: MessageSquare },
+  { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
