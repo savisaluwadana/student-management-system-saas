@@ -5,6 +5,7 @@ import { Calendar, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { PDFExportButton } from './PDFExportButton';
 import type { AttendanceReport } from '@/lib/actions/reports';
 
 interface AttendanceReportsProps {
@@ -16,6 +17,9 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <PDFExportButton reportType="attendance" data={data} title="Attendance Report" />
+      </div>
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>

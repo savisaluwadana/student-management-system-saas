@@ -5,6 +5,7 @@ import { Award, TrendingUp, FileText, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { PDFExportButton } from './PDFExportButton';
 import type { AcademicReport } from '@/lib/actions/reports';
 
 interface AcademicReportsProps {
@@ -16,6 +17,9 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <PDFExportButton reportType="academic" data={data} title="Academic Performance Report" />
+      </div>
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>

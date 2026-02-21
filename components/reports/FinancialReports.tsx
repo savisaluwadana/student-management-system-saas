@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { PDFExportButton } from './PDFExportButton';
 import type { FinancialReport } from '@/lib/actions/reports';
 
 interface FinancialReportsProps {
@@ -22,6 +23,9 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <PDFExportButton reportType="financial" data={data} title="Financial Report" />
+      </div>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
