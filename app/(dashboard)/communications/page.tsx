@@ -1,13 +1,17 @@
 import { CommunicationForm } from '@/components/communications/CommunicationForm';
+import { WhatsAppForm } from '@/components/communications/WhatsAppForm';
 import { getCommunications } from '@/lib/actions/communications';
+import { getClasses } from '@/lib/actions/classes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { Mail, MessageSquare, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Mail, MessageSquare, CheckCircle2, Clock, AlertCircle, MessageCircle } from 'lucide-react';
 
 export default async function CommunicationsPage() {
   const communications = await getCommunications();
+  const classes = await getClasses();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -34,9 +38,26 @@ export default async function CommunicationsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column: Form */}
-        <div className="lg:col-span-1">
-          <CommunicationForm />
+        {/* Left Column: Forms */}
+        <div className="lg:col-span-1 space-y-6">
+          <Tabs defaultValue="email">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email" className="gap-2">
+                <Mail className="h-4 w-4" />
+                Email/SMS
+              </TabsTrigger>
+              <TabsTrigger value="whatsapp" className="gap-2">
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="email" className="mt-6">
+              <CommunicationForm />
+            </TabsContent>
+            <TabsContent value="whatsapp" className="mt-6">
+              <WhatsAppForm classes={classes} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Right Column: History */}
