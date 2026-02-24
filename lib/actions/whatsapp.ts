@@ -36,9 +36,9 @@ export async function sendWhatsAppMessage(
     // Validate phone number format (should be in E.164 format)
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(messageData.to)) {
-      return { 
-        success: false, 
-        error: 'Invalid phone number format. Use E.164 format (e.g., +94771234567)' 
+      return {
+        success: false,
+        error: 'Invalid phone number format. Use E.164 format (e.g., +94771234567)'
       };
     }
 
@@ -69,15 +69,15 @@ export async function sendWhatsAppMessage(
       console.error('Error logging WhatsApp message:', logError);
     }
 
-    return { 
-      success: true, 
-      messageId: mockApiResponse.messageId 
+    return {
+      success: true,
+      messageId: mockApiResponse.messageId
     };
   } catch (error) {
     console.error('Error sending WhatsApp message:', error);
-    return { 
-      success: false, 
-      error: 'Failed to send WhatsApp message' 
+    return {
+      success: false,
+      error: 'Failed to send WhatsApp message'
     };
   }
 }
@@ -113,7 +113,7 @@ export async function sendBulkWhatsAppMessages(
         .eq('status', 'active');
 
       recipients = students
-        ?.map((enrollment: any) => 
+        ?.map((enrollment: any) =>
           enrollment.students?.whatsapp_phone || enrollment.students?.guardian_phone
         )
         .filter(Boolean) || [];
@@ -132,11 +132,11 @@ export async function sendBulkWhatsAppMessages(
     }
 
     if (recipients.length === 0) {
-      return { 
-        success: false, 
-        error: 'No valid recipients found', 
-        sent: 0, 
-        failed: 0 
+      return {
+        success: false,
+        error: 'No valid recipients found',
+        sent: 0,
+        failed: 0
       };
     }
 
@@ -243,9 +243,9 @@ async function simulateWhatsAppAPI(
  */
 export async function getWhatsAppHistory(limit: number = 50) {
   const supabase = await createClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return [];
   }
@@ -268,17 +268,17 @@ export async function getWhatsAppHistory(limit: number = 50) {
 /**
  * Format phone number to E.164 format
  */
-export function formatPhoneNumber(phone: string, countryCode: string = '+94'): string {
+export async function formatPhoneNumber(phone: string, countryCode: string = '+94'): Promise<string> {
   // Remove all non-digit characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // If it starts with 0, remove it
   const withoutLeadingZero = cleaned.startsWith('0') ? cleaned.substring(1) : cleaned;
-  
+
   // Add country code if not present
   if (withoutLeadingZero.startsWith(countryCode.replace('+', ''))) {
     return '+' + withoutLeadingZero;
   }
-  
+
   return countryCode + withoutLeadingZero;
 }
