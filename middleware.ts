@@ -62,23 +62,18 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect dashboard routes
-  if (request.nextUrl.pathname.startsWith('/students') ||
-    request.nextUrl.pathname.startsWith('/classes') ||
-    request.nextUrl.pathname.startsWith('/payments') ||
-    request.nextUrl.pathname.startsWith('/communications') ||
-    request.nextUrl.pathname.startsWith('/settings')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/signup', '/reset-password']
+  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
+
+  // Protect all non-public routes
+  if (!isPublicRoute && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Redirect authenticated users away from auth pages
-  if (request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup')) {
-    if (user) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response

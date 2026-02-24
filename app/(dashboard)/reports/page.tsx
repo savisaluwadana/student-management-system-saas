@@ -17,11 +17,10 @@ export default async function ReportsPage({
     searchParams: { startDate?: string; endDate?: string }
 }) {
     const { startDate, endDate } = searchParams;
-    const { startDate, endDate } = searchParams;
-    
+
     // Fetch data for the overview
     const stats = await getInstituteSummaries();
-    
+
     // Fetch report data with date filters
     const financialData = await getFinancialReport(startDate, endDate);
     const attendanceData = await getAttendanceReport(startDate, endDate);
@@ -32,7 +31,7 @@ export default async function ReportsPage({
     const totalClasses = stats.reduce((acc, inst) => acc + (inst.total_classes || 0), 0);
 
     return (
-        <ReportsPageClient 
+        <ReportsPageClient
             initialStats={{ totalStudents, totalClasses }}
             initialFinancialData={financialData}
             initialAttendanceData={attendanceData}
