@@ -65,7 +65,7 @@ export function WhatsAppForm({ classes = [] }: WhatsAppFormProps) {
           return;
         }
 
-        const formattedPhone = formatPhoneNumber(phoneNumber);
+        const formattedPhone = await formatPhoneNumber(phoneNumber);
         const result = await sendWhatsAppMessage({
           to: formattedPhone,
           message: message.trim(),
@@ -91,10 +91,12 @@ export function WhatsAppForm({ classes = [] }: WhatsAppFormProps) {
         let recipients: string[] = [];
 
         if (bulkType === 'custom') {
-          recipients = customPhones
-            .split(',')
-            .map(p => formatPhoneNumber(p.trim()))
-            .filter(Boolean);
+          recipients = await Promise.all(
+            customPhones
+              .split(',')
+              .map(p => formatPhoneNumber(p.trim()))
+          );
+          recipients = recipients.filter(Boolean);
         }
 
         if (bulkType === 'class' && !selectedClass) {
@@ -283,7 +285,7 @@ export function WhatsAppForm({ classes = [] }: WhatsAppFormProps) {
 
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            <strong>Note:</strong> WhatsApp integration is currently in mock mode. 
+            <strong>Note:</strong> WhatsApp integration is currently in mock mode.
             In production, this will integrate with WhatsApp Business API.
           </p>
         </div>
