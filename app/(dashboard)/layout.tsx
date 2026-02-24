@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardLayout({
@@ -18,6 +19,7 @@ export default async function DashboardLayout({
           <Sidebar user={user} />
         </div>
         <main className="flex-1 overflow-y-auto bg-muted/50 p-6">
+          <Breadcrumbs />
           {children}
         </main>
       </div>
