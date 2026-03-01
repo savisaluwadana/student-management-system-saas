@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Plus, ClipboardList, Edit } from 'lucide-react';
+import { AssessmentActions } from '@/components/assessments/AssessmentActions';
 
 const typeLabels: Record<string, string> = {
     exam: 'Exam',
@@ -85,18 +86,7 @@ export default async function AssessmentsPage() {
                                         </TableCell>
                                         <TableCell>{assessment.max_score}</TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Link href={`/assessments/${assessment.id}/grades`}>
-                                                    <Button size="sm" variant="default">
-                                                        Enter Grades
-                                                    </Button>
-                                                </Link>
-                                                <Link href={`/assessments/${assessment.id}/edit`}>
-                                                    <Button size="sm" variant="ghost">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
+                                            <AssessmentActions id={assessment.id} />
                                         </TableCell>
                                     </TableRow>
                                 ))}

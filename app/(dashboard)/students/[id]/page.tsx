@@ -52,7 +52,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
         </TabsContent>
 
         <TabsContent value="grades">
-          <StudentGradesView grades={reportCard as any} />
+          <StudentGradesView grades={reportCard as unknown as any[]} />
         </TabsContent>
       </Tabs>
     </div>
