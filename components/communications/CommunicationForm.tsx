@@ -38,8 +38,32 @@ const formSchema = z.object({
     message: z.string().min(10, "Message must be at least 10 characters"),
 })
 
+import { getClasses } from "@/lib/actions/classes"
+import { getStudents } from "@/lib/actions/students"
+import { Class } from "@/types/class.types"
+import { Student } from "@/types/student.types"
+import { useEffect } from "react"
+
 export function CommunicationForm() {
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [classes, setClasses] = useState<Class[]>([])
+    const [students, setStudents] = useState<Student[]>([])
+
+    useEffect(() => {
+        const loadRecipients = async () => {
+            try {
+                const [classesData, studentsData] = await Promise.all([
+                    getClasses('active'),
+                    getStudents('active')
+                ]);
+                setClasses(classesData);
+                setStudents(studentsData);
+            } catch (error) {
+                console.error("Failed to load recipients", error);
+            }
+        };
+        loadRecipients();
+    }, []);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -160,21 +184,54 @@ export function CommunicationForm() {
                             />
                         </div>
 
-                        {/* 
-                            TODO: Add searching for specific class/student ID here if recipient_type is 'class' or 'student'.
-                            For MVP, we'll default to 'all' or require manual ID input or improve later.
-                            Keeping it simple for now as requested.
-                        */}
-                        {(recipientType === 'class' || recipientType === 'student') && (
+                        {recipientType === 'class' && (
                             <FormField
                                 control={form.control}
                                 name="recipient_id"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>{recipientType === 'class' ? 'Class ID' : 'Student ID'}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={`Enter ${recipientType} ID`} {...field} />
-                                        </FormControl>
+                                        <FormLabel>Class</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a class" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {classes.map((cls) => (
+                                                    <SelectItem key={cls.id} value={cls.id}>
+                                                        {cls.class_name} ({cls.class_code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+
+                        {recipientType === 'student' && (
+                            <FormField
+                                control={form.control}
+                                name="recipient_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Student</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a student" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {students.map((student) => (
+                                                    <SelectItem key={student.id} value={student.id}>
+                                                        {student.full_name} ({student.student_code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

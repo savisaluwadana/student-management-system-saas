@@ -2,6 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { sendEmail } from '@/lib/services/notifications/email';
+import { sendSms } from '@/lib/services/notifications/sms';
+import { sendWhatsApp } from '@/lib/services/notifications/whatsapp';
 
 export interface NotificationPreference {
   id: string;
@@ -34,9 +37,9 @@ export interface UpdateNotificationPreferenceInput {
  */
 export async function getNotificationPreferences(): Promise<NotificationPreference | null> {
   const supabase = await createClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return null;
   }
@@ -88,9 +91,9 @@ export async function updateNotificationPreferences(
   input: UpdateNotificationPreferenceInput
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
@@ -123,7 +126,7 @@ export async function sendNotification(
   message: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  
+
   // Get user preferences
   const { data: prefs } = await supabase
     .from('notification_preferences')
@@ -156,23 +159,20 @@ export async function sendNotification(
 
   // Send email if enabled
   if (prefs.email_notifications && userData.email) {
-    // TODO: Integrate with email service (Resend, SendGrid, etc.)
-    notifications.push('email');
-    console.log(`[EMAIL] To: ${userData.email}, Subject: ${subject}, Message: ${message}`);
+    const res = await sendEmail({ to: userData.email, subject, message });
+    if (res.success) notifications.push('email');
   }
 
   // Send SMS if enabled
   if (prefs.sms_notifications && userData.phone) {
-    // TODO: Integrate with SMS service (Twilio, etc.)
-    notifications.push('sms');
-    console.log(`[SMS] To: ${userData.phone}, Message: ${message}`);
+    const res = await sendSms({ to: userData.phone, message });
+    if (res.success) notifications.push('sms');
   }
 
   // Send WhatsApp if enabled
   if (prefs.whatsapp_notifications && userData.phone) {
-    // TODO: Integrate with WhatsApp Business API
-    notifications.push('whatsapp');
-    console.log(`[WhatsApp] To: ${userData.phone}, Message: ${message}`);
+    const res = await sendWhatsApp({ to: userData.phone, message });
+    if (res.success) notifications.push('whatsapp');
   }
 
   if (notifications.length === 0) {
@@ -197,9 +197,9 @@ export async function sendNotification(
  */
 export async function getNotificationLogs(limit: number = 50) {
   const supabase = await createClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return [];
   }

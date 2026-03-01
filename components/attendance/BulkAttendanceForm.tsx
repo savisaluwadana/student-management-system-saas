@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface BulkAttendanceFormProps {
-    classes: Array<{ id: string; class_name: string; class_code: string; enrollment_count: number }>;
+    classes: Array<{ id: string; institute_id: string | null; class_name: string; class_code: string; enrollment_count: number }>;
     institutes: Institute[];
 }
 
@@ -46,7 +46,7 @@ export function BulkAttendanceForm({ classes, institutes }: BulkAttendanceFormPr
 
     // Filter classes by institute
     const filteredClasses = selectedInstitute
-        ? classes // TODO: Filter when institute_id is added to classes
+        ? classes.filter(c => c.institute_id === selectedInstitute)
         : classes;
 
     // Load students when class is selected

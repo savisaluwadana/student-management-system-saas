@@ -23,6 +23,7 @@ export async function getClassesForAttendance(): Promise<ClassWithEnrollmentCoun
         .from('classes')
         .select(`
       id,
+      institute_id,
       class_code,
       class_name,
       subject,
@@ -39,6 +40,7 @@ export async function getClassesForAttendance(): Promise<ClassWithEnrollmentCoun
 
     return (data || []).map((cls: any) => ({
         id: cls.id,
+        institute_id: cls.institute_id,
         class_code: cls.class_code,
         class_name: cls.class_name,
         subject: cls.subject,

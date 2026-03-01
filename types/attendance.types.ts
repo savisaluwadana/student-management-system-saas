@@ -61,6 +61,7 @@ export interface ClassAttendanceDaily {
 
 export interface ClassWithEnrollmentCount {
     id: string;
+    institute_id: string | null;
     class_code: string;
     class_name: string;
     subject: string;
