@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Class } from "@/types/class.types";
 import { Textarea } from "@/components/ui/textarea";
 import { getTeachers, Teacher } from "@/lib/actions/teachers";
+import { getInstitutes, Institute } from "@/lib/actions/institutes";
 import { useEffect } from "react";
 import {
     Dialog,
@@ -39,6 +40,7 @@ interface ClassFormProps {
     onSuccess?: () => void;
 }
 const classSchema = z.object({
+    institute_id: z.string().optional(),
     class_code: z.string().min(2, "Class code must be at least 2 characters."),
     class_name: z.string().min(2, "Class name must be at least 2 characters."),
     subject: z.string().min(2, "Subject is required."),
@@ -68,21 +70,27 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [institutes, setInstitutes] = useState<Institute[]>([]);
 
     useEffect(() => {
-        const fetchTeachers = async () => {
+        const fetchTeachersAndInstitutes = async () => {
             try {
-                const data = await getTeachers();
-                setTeachers(data);
+                const [teachersData, institutesData] = await Promise.all([
+                    getTeachers(),
+                    getInstitutes()
+                ]);
+                setTeachers(teachersData);
+                setInstitutes(institutesData);
             } catch (error) {
-                console.error("Failed to load teachers", error);
+                console.error("Failed to load select data", error);
             }
         };
-        fetchTeachers();
+        fetchTeachersAndInstitutes();
     }, []);
 
     const defaultValues: Partial<ClassFormValues> = initialData
         ? {
+            institute_id: initialData.institute_id || "",
             class_code: initialData.class_code,
             class_name: initialData.class_name,
             subject: initialData.subject,
@@ -94,6 +102,7 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
             teacher_id: initialData.teacher_id || "",
         }
         : {
+            institute_id: "",
             class_code: "",
             class_name: "",
             subject: "",
@@ -168,6 +177,30 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="institute_id"
+                        render={({ field }) => (
+                            <FormItem className="col-span-2 md:col-span-1">
+                                <FormLabel>Institute (Optional)</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an institute" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {institutes.map((inst) => (
+                                            <SelectItem key={inst.id} value={inst.id}>
+                                                {inst.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField
                         control={form.control}
                         name="class_code"

@@ -2,6 +2,7 @@ export type ClassStatus = 'active' | 'inactive' | 'completed';
 
 export interface Class {
   id: string;
+  institute_id: string | null;
   class_code: string;
   class_name: string;
   subject: string;
@@ -18,6 +19,7 @@ export interface Class {
 }
 
 export interface CreateClassInput {
+  institute_id?: string;
   class_code: string;
   class_name: string;
   subject: string;
@@ -32,6 +34,7 @@ export interface CreateClassInput {
 }
 
 export interface UpdateClassInput {
+  institute_id?: string;
   class_name?: string;
   subject?: string;
   description?: string;
