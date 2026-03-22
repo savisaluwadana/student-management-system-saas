@@ -5,6 +5,10 @@ const nextConfig = {
   images: {
     domains: [],
   },
+  eslint: {
+    // ESLint errors are checked separately via `npm run lint`; don't block builds
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig

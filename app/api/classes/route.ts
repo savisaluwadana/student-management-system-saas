@@ -1,22 +1,19 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import connectDB from '@/lib/mongodb/client';
+import Class from '@/lib/mongodb/models/Class';
 
 export async function GET() {
-    try {
-        const supabase = await createClient();
+  try {
+    await connectDB();
+    const classes = await Class.find({ status: 'active' })
+      .select('id class_code class_name subject')
+      .sort({ class_name: 1 })
+      .lean({ virtuals: true });
 
-        const { data, error } = await supabase
-            .from('classes')
-            .select('id, class_code, class_name, subject')
-            .eq('status', 'active')
-            .order('class_name');
-
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-
-        return NextResponse.json(data || []);
-    } catch (error: any) {
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
+    return NextResponse.json(
+      (classes as any[]).map((c) => ({ ...c, id: c._id.toString() }))
+    );
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

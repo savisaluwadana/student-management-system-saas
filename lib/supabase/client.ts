@@ -1,8 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr'
-
+// Stub — Supabase client replaced with MongoDB + JWT auth
+// This file kept for import compatibility only. Do not use.
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  throw new Error('Supabase has been replaced with MongoDB. Use lib/auth/auth.ts and lib/mongodb/client.ts instead.');
 }
