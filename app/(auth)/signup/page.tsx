@@ -34,7 +34,13 @@ export default function SignupPage() {
         body: JSON.stringify({ email, password, full_name: fullName, role: 'admin' }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: raw || `Request failed (${res.status})` };
+      }
 
       if (!res.ok) {
         toast({

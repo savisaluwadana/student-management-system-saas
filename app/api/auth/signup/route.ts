@@ -10,7 +10,14 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
-    const { email, password, full_name, role = 'admin' } = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
+    const { email, password, full_name, role = 'admin' } = body || {};
 
     if (!email || !password || !full_name) {
       return NextResponse.json({ error: 'Email, password, and full name are required' }, { status: 400 });
@@ -60,9 +67,29 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error('Signup error:', error);
-    if (error instanceof Error && error.message.includes('JWT_SECRET')) {
+    const message = error instanceof Error ? error.message : '';
+
+    if (message.includes('JWT_SECRET')) {
       return NextResponse.json({ error: 'Server misconfiguration: JWT_SECRET is not set' }, { status: 500 });
     }
+
+    if (message.includes('MONGODB_URI')) {
+      return NextResponse.json({ error: 'Server misconfiguration: MONGODB_URI is not set' }, { status: 500 });
+    }
+
+    if (
+      message.includes('querySrv') ||
+      message.includes('ENOTFOUND') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('MongoNetworkError')
+    ) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
+    if (message.toLowerCase().includes('authentication failed')) {
+      return NextResponse.json({ error: 'Database authentication failed' }, { status: 500 });
+    }
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
