@@ -1,11 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-if (!JWT_SECRET) {
-  throw new Error('Please define the JWT_SECRET environment variable in .env');
+function getJwtSecret(): string | null {
+  return process.env.JWT_SECRET || null;
 }
 
 export interface JWTPayload {
@@ -19,7 +18,11 @@ export interface JWTPayload {
  * Sign a JWT token for a user
  */
 export function signToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
+  const secret = getJwtSecret();
+  if (!secret) {
+    throw new Error('Server misconfiguration: JWT_SECRET is not set');
+  }
+  return jwt.sign(payload, secret, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
 }
 
 /**
@@ -27,7 +30,9 @@ export function signToken(payload: JWTPayload): string {
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const secret = getJwtSecret();
+    if (!secret) return null;
+    return jwt.verify(token, secret) as JWTPayload;
   } catch {
     return null;
   }

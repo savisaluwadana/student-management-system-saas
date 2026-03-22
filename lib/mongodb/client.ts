@@ -1,11 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable in .env');
-}
-
 // Use a global cache to prevent multiple connections during hot reload in dev
 declare global {
   var mongoose: {
@@ -21,6 +15,11 @@ if (!cached) {
 }
 
 async function connectDB() {
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error('Server misconfiguration: MONGODB_URI is not set');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -30,7 +29,7 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(mongoUri, opts).then((mongoose) => {
       return mongoose;
     });
   }
