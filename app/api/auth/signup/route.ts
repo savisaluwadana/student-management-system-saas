@@ -5,6 +5,10 @@ import { signToken } from '@/lib/auth/auth';
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.JWT_SECRET) {
+      return NextResponse.json({ error: 'Server misconfiguration: JWT_SECRET is not set' }, { status: 500 });
+    }
+
     await connectDB();
     const { email, password, full_name, role = 'admin' } = await request.json();
 
@@ -56,6 +60,9 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error('Signup error:', error);
+    if (error instanceof Error && error.message.includes('JWT_SECRET')) {
+      return NextResponse.json({ error: 'Server misconfiguration: JWT_SECRET is not set' }, { status: 500 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
