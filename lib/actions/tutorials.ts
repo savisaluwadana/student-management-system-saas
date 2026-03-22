@@ -228,9 +228,9 @@ export async function getTutorialProgressSummary() {
       },
     },
     { $lookup: { from: 'tutorials', localField: '_id', foreignField: '_id', as: 'tutorial' } },
-    { $unwind: { path: '$tutorial', preserveNullAndEmpty: true } },
+    { $unwind: { path: '$tutorial', preserveNullAndEmptyArrays: true } },
     { $lookup: { from: 'classes', localField: 'tutorial.class_id', foreignField: '_id', as: 'class' } },
-    { $unwind: { path: '$class', preserveNullAndEmpty: true } },
+    { $unwind: { path: '$class', preserveNullAndEmptyArrays: true } },
   ]);
 
   return summary.map((s) => ({

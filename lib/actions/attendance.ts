@@ -138,7 +138,7 @@ export async function getStudentAttendanceSummary(studentId: string): Promise<St
         as: 'class',
       },
     },
-    { $unwind: { path: '$class', preserveNullAndEmpty: true } },
+    { $unwind: { path: '$class', preserveNullAndEmptyArrays: true } },
   ]);
 
   return summary.map((s) => ({
@@ -169,7 +169,7 @@ export async function getTodayAttendanceSummary(): Promise<ClassAttendanceDaily[
       },
     },
     { $lookup: { from: 'classes', localField: '_id', foreignField: '_id', as: 'class' } },
-    { $unwind: { path: '$class', preserveNullAndEmpty: true } },
+    { $unwind: { path: '$class', preserveNullAndEmptyArrays: true } },
   ]);
 
   return summary.map((s) => ({

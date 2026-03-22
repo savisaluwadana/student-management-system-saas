@@ -9,10 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { Bell, Mail, MessageSquare, Smartphone } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/lib/actions/notifications";
-import type { NotificationPreference } from "@/lib/actions/notifications";
+import type { NotificationPreferenceType } from "@/lib/actions/notifications";
 
 export function NotificationSettings() {
-    const [prefs, setPrefs] = useState<Partial<NotificationPreference>>({
+    const [prefs, setPrefs] = useState<Partial<NotificationPreferenceType>>({
         email_notifications: true,
         sms_notifications: false,
         whatsapp_notifications: false,
