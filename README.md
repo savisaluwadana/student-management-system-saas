@@ -2,7 +2,7 @@
 
 EduFlow is a modern, all-in-one SaaS platform designed for educational institutes to manage their day-to-day operations efficiently. From student enrollment to fee management and attendance tracking, EduFlow provides a unified dashboard to streamline "ed-admin" tasks.
 
-![EduFlow Dashboard](https://placehold.co/1200x600/png?text=EduFlow+Dashboard+Preview)
+<img width="3024" height="1720" alt="image" src="https://github.com/user-attachments/assets/9d57e1e9-8442-4f6e-a7c6-83f0f38e3aab" />
 
 ## 🚀 Key Features
 
