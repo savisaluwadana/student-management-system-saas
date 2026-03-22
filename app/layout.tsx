@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} font-sans antialiased`}>
-        <ThemeProvider defaultTheme="system" storageKey="sms-theme">
+        <ThemeProvider defaultTheme="light" storageKey="sms-theme">
           <CommandMenu />
           {children}
           <Toaster />

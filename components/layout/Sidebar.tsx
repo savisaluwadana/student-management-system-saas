@@ -45,6 +45,7 @@ const navigation = [
   { name: 'Communications', href: '/communications', icon: MessageSquare },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Docs', href: '/docs', icon: FileText },
 ];
 
 export function Sidebar({ className, user }: { className?: string; user?: any }) {

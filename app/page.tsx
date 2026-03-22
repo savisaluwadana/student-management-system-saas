@@ -44,6 +44,7 @@ export default async function LandingPage() {
               <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
               <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
+              <Link href="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Documentation</Link>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/login">
@@ -52,7 +53,7 @@ export default async function LandingPage() {
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25">
+                <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25">
                   Get Started
                 </Button>
               </Link>
