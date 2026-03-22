@@ -1,4 +1,5 @@
 export type ClassStatus = 'active' | 'inactive' | 'completed';
+export type FeeCollectionType = 'daily' | 'monthly';
 
 export interface Class {
   id: string;
@@ -10,6 +11,7 @@ export interface Class {
   teacher_id: string | null;
   schedule: string | null;
   monthly_fee: number;
+  fee_collection_type: FeeCollectionType;
   capacity: number;
   status: ClassStatus;
   start_date: string | null;
@@ -27,6 +29,7 @@ export interface CreateClassInput {
   teacher_id?: string;
   schedule?: string;
   monthly_fee?: number;
+  fee_collection_type?: FeeCollectionType;
   capacity?: number;
   status?: ClassStatus;
   start_date?: string;
@@ -41,6 +44,7 @@ export interface UpdateClassInput {
   teacher_id?: string;
   schedule?: string;
   monthly_fee?: number;
+  fee_collection_type?: FeeCollectionType;
   capacity?: number;
   status?: ClassStatus;
   start_date?: string;

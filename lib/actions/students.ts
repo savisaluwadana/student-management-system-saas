@@ -8,6 +8,34 @@ import Class from '@/lib/mongodb/models/Class';
 import mongoose from 'mongoose';
 import type { Student as StudentType, CreateStudentInput, UpdateStudentInput } from '@/types/student.types';
 
+function randomSixDigits(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function generateUniqueStudentCode(): Promise<string> {
+  const year = new Date().getFullYear().toString().slice(-2);
+
+  for (let i = 0; i < 10; i++) {
+    const code = `STD${year}${randomSixDigits()}`;
+    const exists = await Student.exists({ student_code: code });
+    if (!exists) return code;
+  }
+
+  throw new Error('Failed to generate unique student ID. Please try again.');
+}
+
+async function generateUniqueBarcode(): Promise<string> {
+  const year = new Date().getFullYear().toString().slice(-2);
+
+  for (let i = 0; i < 10; i++) {
+    const barcode = `STU${year}${randomSixDigits()}`;
+    const exists = await Student.exists({ barcode });
+    if (!exists) return barcode;
+  }
+
+  throw new Error('Failed to generate unique QR/barcode. Please try again.');
+}
+
 function docToStudent(doc: any): StudentType {
   const obj = doc.toObject ? doc.toObject({ virtuals: true }) : doc;
   return { ...obj, id: obj._id?.toString() || obj.id };
@@ -85,7 +113,21 @@ export async function createStudent(input: CreateStudentInput): Promise<{ succes
   const { class_ids, ...studentData } = input;
 
   try {
-    const student = await Student.create(studentData);
+    const student_code = input.student_code?.trim() || await generateUniqueStudentCode();
+
+    const existingByCode = await Student.exists({ student_code });
+    if (existingByCode) {
+      return { success: false, error: 'Student ID already exists. Please use a different value.' };
+    }
+
+    const barcode = await generateUniqueBarcode();
+
+    const student = await Student.create({
+      ...studentData,
+      student_code,
+      barcode,
+      joining_date: studentData.joining_date || new Date().toISOString().split('T')[0],
+    });
 
     if (class_ids && class_ids.length > 0) {
       const enrollments = class_ids.map((classId) => ({

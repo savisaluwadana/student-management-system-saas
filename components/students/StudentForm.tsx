@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createStudent, updateStudent } from '@/lib/actions/students';
@@ -34,6 +35,7 @@ export function StudentForm({ student }: StudentFormProps) {
   const [classes, setClasses] = useState<Class[]>([]);
   const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(student?.photo_url || null);
+  const [autoGenerateStudentId, setAutoGenerateStudentId] = useState(!student);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<CreateStudentInput>({
@@ -123,11 +125,15 @@ export function StudentForm({ student }: StudentFormProps) {
           });
         }
       } else {
-        const result = await createStudent(formData);
+        const payload: CreateStudentInput = {
+          ...formData,
+          student_code: autoGenerateStudentId ? undefined : formData.student_code?.trim(),
+        };
+        const result = await createStudent(payload);
         if (result.success) {
           toast({
             title: 'Success',
-            description: 'Student created successfully',
+            description: 'Student created successfully. QR/Barcode was generated automatically.',
           });
           router.push('/students');
         } else {
@@ -196,14 +202,30 @@ export function StudentForm({ student }: StudentFormProps) {
         </div>
 
         <div className="flex-1 grid grid-cols-2 gap-4">
+          <div className="space-y-2 col-span-2">
+            {!student && (
+              <div className="flex items-center gap-2 rounded-md border p-3 bg-muted/30">
+                <Checkbox
+                  id="auto_student_id"
+                  checked={autoGenerateStudentId}
+                  onCheckedChange={(checked) => setAutoGenerateStudentId(Boolean(checked))}
+                />
+                <Label htmlFor="auto_student_id" className="cursor-pointer">
+                  Auto-generate Student ID
+                </Label>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="student_code">Student Code *</Label>
+            <Label htmlFor="student_code">Student ID {student || !autoGenerateStudentId ? '*' : ''}</Label>
             <Input
               id="student_code"
               value={formData.student_code}
               onChange={(e) => setFormData({ ...formData, student_code: e.target.value })}
-              required
-              disabled={!!student}
+              required={!!student || !autoGenerateStudentId}
+              disabled={!!student || autoGenerateStudentId}
+              placeholder={autoGenerateStudentId ? 'Will be generated automatically' : 'Enter student ID'}
             />
           </div>
 
@@ -267,7 +289,7 @@ export function StudentForm({ student }: StudentFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone">Normal Number</Label>
           <Input
             id="phone"
             value={formData.phone || ''}
@@ -276,7 +298,7 @@ export function StudentForm({ student }: StudentFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="whatsapp_phone">WhatsApp Phone</Label>
+          <Label htmlFor="whatsapp_phone">WhatsApp Number</Label>
           <Input
             id="whatsapp_phone"
             value={formData.whatsapp_phone || ''}

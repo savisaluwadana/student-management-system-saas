@@ -6,14 +6,18 @@ export interface IStudent extends Document {
   full_name: string;
   email?: string;
   phone?: string;
+  whatsapp_phone?: string;
   date_of_birth?: string;
+  joining_date?: string;
   gender?: string;
   address?: string;
+  school?: string;
   guardian_name?: string;
   guardian_phone?: string;
   guardian_email?: string;
   status: 'active' | 'inactive' | 'graduated' | 'suspended';
   barcode?: string;
+  photo_url?: string;
   notes?: string;
   institute_id?: mongoose.Types.ObjectId;
   created_at: Date;
@@ -26,14 +30,18 @@ const StudentSchema = new Schema<IStudent>(
     full_name: { type: String, required: true },
     email: { type: String, lowercase: true },
     phone: { type: String },
+    whatsapp_phone: { type: String },
     date_of_birth: { type: String },
+    joining_date: { type: String },
     gender: { type: String },
     address: { type: String },
+    school: { type: String },
     guardian_name: { type: String },
     guardian_phone: { type: String },
     guardian_email: { type: String },
     status: { type: String, enum: ['active', 'inactive', 'graduated', 'suspended'], default: 'active' },
     barcode: { type: String },
+    photo_url: { type: String },
     notes: { type: String },
     institute_id: { type: Schema.Types.ObjectId, ref: 'Institute' },
   },

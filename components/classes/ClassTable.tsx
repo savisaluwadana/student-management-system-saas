@@ -117,7 +117,8 @@ export function ClassTable({ classes }: ClassTableProps) {
                                     <TableHead className="font-semibold">Code</TableHead>
                                     <TableHead className="font-semibold">Name</TableHead>
                                     <TableHead className="font-semibold">Subject</TableHead>
-                                    <TableHead className="font-semibold">Monthly Fee</TableHead>
+                                    <TableHead className="font-semibold">Fee Amount</TableHead>
+                                    <TableHead className="font-semibold">Collection</TableHead>
                                     <TableHead className="font-semibold">Capacity</TableHead>
                                     <TableHead className="font-semibold">Status</TableHead>
                                     <TableHead className="text-right font-semibold">Actions</TableHead>
@@ -134,6 +135,11 @@ export function ClassTable({ classes }: ClassTableProps) {
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">{cls.subject}</TableCell>
                                         <TableCell className="font-semibold">{formatCurrency(cls.monthly_fee)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="capitalize">
+                                                {cls.fee_collection_type || 'monthly'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell>{cls.capacity}</TableCell>
                                         <TableCell>
                                             <Badge variant={cls.status === 'active' ? 'default' : 'secondary'} className="capitalize">

@@ -48,6 +48,7 @@ const classSchema = z.object({
     monthly_fee: z.string().refine((val) => !Number.isNaN(parseFloat(val)), {
         message: "Monthly fee must be a valid number",
     }).optional(),
+    fee_collection_type: z.enum(["daily", "monthly"]),
     capacity: z.string().refine((val) => !Number.isNaN(parseInt(val)), {
         message: "Capacity must be a valid number",
     }).optional(),
@@ -96,6 +97,7 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
             subject: initialData.subject,
             description: initialData.description || "",
             monthly_fee: initialData.monthly_fee?.toString(),
+            fee_collection_type: initialData.fee_collection_type || "monthly",
             capacity: initialData.capacity?.toString(),
             status: initialData.status,
             schedule: initialData.schedule || "",
@@ -108,6 +110,7 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
             subject: "",
             description: "",
             monthly_fee: "",
+            fee_collection_type: "monthly",
             capacity: "",
             status: "active",
             schedule: "",
@@ -258,10 +261,34 @@ export function ClassForm({ initialData, trigger, onSuccess }: ClassFormProps) {
                         name="monthly_fee"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Monthly Fee</FormLabel>
+                                <FormLabel>Fee Amount</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="e.g. 1500" {...field} />
                                 </FormControl>
+                                <FormDescription>
+                                    Fee amount per billing cycle.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="fee_collection_type"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Fee Collection</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select fee collection type" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="daily">Daily</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}

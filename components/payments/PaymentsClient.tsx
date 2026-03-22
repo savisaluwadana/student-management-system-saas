@@ -172,6 +172,7 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                                             <TableHead className="font-semibold">Student</TableHead>
                                             <TableHead className="font-semibold">Amount</TableHead>
                                             <TableHead className="font-semibold">Month</TableHead>
+                                            <TableHead className="font-semibold">Collection</TableHead>
                                             <TableHead className="font-semibold">Date</TableHead>
                                             <TableHead className="text-right font-semibold">Method</TableHead>
                                             <TableHead className="w-[50px]"></TableHead>
@@ -194,7 +195,14 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                                                 <TableCell className="font-bold text-gray-900 dark:text-gray-100">
                                                     {formatCurrency(payment.amount)}
                                                 </TableCell>
-                                                <TableCell>{formatDate(payment.payment_month, 'MMM yyyy')}</TableCell>
+                                                <TableCell>
+                                                    {payment.fee_collection_type === 'daily'
+                                                        ? formatDate(payment.payment_month)
+                                                        : formatDate(payment.payment_month, 'MMM yyyy')}
+                                                </TableCell>
+                                                <TableCell className="capitalize text-muted-foreground">
+                                                    {payment.fee_collection_type || 'monthly'}
+                                                </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {payment.payment_date ? formatDate(payment.payment_date) : '-'}
                                                 </TableCell>

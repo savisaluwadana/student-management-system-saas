@@ -20,7 +20,12 @@ export async function getClasses(status?: string): Promise<ClassType[]> {
     .sort({ created_at: -1 })
     .lean({ virtuals: true });
 
-  return classes.map((c: any) => ({ ...c, id: c._id.toString() })) as unknown as ClassType[];
+  return classes.map((c: any) => ({
+    ...c,
+    id: c._id.toString(),
+    monthly_fee: c.monthly_fee ?? c.fee_amount ?? 0,
+    fee_collection_type: c.fee_collection_type || 'monthly',
+  })) as unknown as ClassType[];
 }
 
 /**
@@ -35,7 +40,12 @@ export async function getClassById(id: string): Promise<ClassType | null> {
   if (!cls) return null;
 
   const c = cls as any;
-  return { ...c, id: c._id.toString() } as unknown as ClassType;
+  return {
+    ...c,
+    id: c._id.toString(),
+    monthly_fee: c.monthly_fee ?? c.fee_amount ?? 0,
+    fee_collection_type: c.fee_collection_type || 'monthly',
+  } as unknown as ClassType;
 }
 
 /**
@@ -45,7 +55,12 @@ export async function createClass(input: CreateClassInput): Promise<{ success: b
   await connectDB();
 
   try {
-    const cls = await Class.create(input);
+    const { monthly_fee, ...rest } = input;
+    const cls = await Class.create({
+      ...rest,
+      fee_amount: monthly_fee,
+      fee_collection_type: input.fee_collection_type || 'monthly',
+    });
     revalidatePath('/classes');
     return { success: true, id: cls._id.toHexString() };
   } catch (error: any) {
@@ -63,7 +78,11 @@ export async function updateClass(id: string, input: UpdateClassInput): Promise<
   if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
 
   try {
-    await Class.findByIdAndUpdate(id, input);
+    const { monthly_fee, ...rest } = input;
+    await Class.findByIdAndUpdate(id, {
+      ...rest,
+      ...(monthly_fee !== undefined ? { fee_amount: monthly_fee } : {}),
+    });
     revalidatePath('/classes');
     revalidatePath(`/classes/${id}`);
     return { success: true };

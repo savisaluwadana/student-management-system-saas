@@ -5,6 +5,7 @@ export interface IFeePayment extends Document {
   student_id: mongoose.Types.ObjectId;
   class_id?: mongoose.Types.ObjectId;
   amount: number;
+  fee_collection_type: 'daily' | 'monthly';
   status: 'pending' | 'paid' | 'overdue' | 'waived' | 'unpaid';
   payment_month: string; // YYYY-MM-DD (first day of month)
   due_date?: string;
@@ -21,6 +22,7 @@ const FeePaymentSchema = new Schema<IFeePayment>(
     student_id: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
     class_id: { type: Schema.Types.ObjectId, ref: 'Class' },
     amount: { type: Number, required: true },
+    fee_collection_type: { type: String, enum: ['daily', 'monthly'], default: 'monthly' },
     status: { type: String, enum: ['pending', 'paid', 'overdue', 'waived', 'unpaid'], default: 'pending' },
     payment_month: { type: String, required: true },
     due_date: { type: String },

@@ -1,11 +1,13 @@
 export type PaymentStatus = 'paid' | 'unpaid' | 'overdue' | 'partial';
 export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'online' | 'other';
+export type FeeCollectionType = 'daily' | 'monthly';
 
 export interface FeePayment {
   id: string;
   student_id: string;
   enrollment_id: string | null;
   amount: number;
+  fee_collection_type: FeeCollectionType;
   payment_month: string;
   payment_date: string | null;
   due_date: string;
@@ -25,6 +27,7 @@ export interface CreatePaymentInput {
   student_id: string;
   enrollment_id?: string;
   amount: number;
+  fee_collection_type?: FeeCollectionType;
   payment_month: string;
   due_date: string;
   status?: PaymentStatus;

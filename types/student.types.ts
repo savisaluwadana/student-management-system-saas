@@ -39,7 +39,7 @@ export interface Student {
 }
 
 export interface CreateStudentInput {
-  student_code: string;
+  student_code?: string;
   full_name: string;
   email?: string;
   phone?: string;

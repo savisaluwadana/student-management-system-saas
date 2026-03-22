@@ -10,6 +10,7 @@ export interface IClass extends Document {
   institute_id?: mongoose.Types.ObjectId;
   schedule?: string;
   fee_amount?: number;
+  fee_collection_type: 'daily' | 'monthly';
   status: 'active' | 'inactive' | 'completed';
   created_at: Date;
   updated_at: Date;
@@ -25,6 +26,7 @@ const ClassSchema = new Schema<IClass>(
     institute_id: { type: Schema.Types.ObjectId, ref: 'Institute' },
     schedule: { type: String },
     fee_amount: { type: Number },
+    fee_collection_type: { type: String, enum: ['daily', 'monthly'], default: 'monthly' },
     status: { type: String, enum: ['active', 'inactive', 'completed'], default: 'active' },
   },
   {

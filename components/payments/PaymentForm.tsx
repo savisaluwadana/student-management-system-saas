@@ -59,6 +59,7 @@ const formSchema = z.object({
         required_error: "Please select a student.",
     }),
     amount: z.coerce.number().min(1, "Amount must be greater than 0."),
+    fee_collection_type: z.enum(["daily", "monthly"]),
     payment_month: z.date({
         required_error: "Payment month is required.",
     }),
@@ -87,6 +88,7 @@ export function PaymentForm({ payment, trigger }: PaymentFormProps) {
         defaultValues: {
             student_id: payment?.student_id || "",
             amount: payment?.amount || 0,
+            fee_collection_type: payment?.fee_collection_type || "monthly",
             payment_month: payment?.payment_month ? new Date(payment.payment_month) : new Date(),
             payment_method: payment?.payment_method || "",
             notes: payment?.notes || "",
@@ -114,6 +116,7 @@ export function PaymentForm({ payment, trigger }: PaymentFormProps) {
             form.reset({
                 student_id: payment.student_id,
                 amount: payment.amount,
+                fee_collection_type: payment.fee_collection_type || "monthly",
                 payment_month: new Date(payment.payment_month),
                 payment_method: payment.payment_method || "",
                 notes: payment.notes || "",
@@ -131,6 +134,7 @@ export function PaymentForm({ payment, trigger }: PaymentFormProps) {
                 result = await updatePayment(payment.id, {
                     student_id: values.student_id,
                     amount: values.amount,
+                    fee_collection_type: values.fee_collection_type,
                     payment_month: values.payment_month.toISOString(),
                     payment_method: values.payment_method as any,
                     status: values.status as any,
@@ -140,6 +144,7 @@ export function PaymentForm({ payment, trigger }: PaymentFormProps) {
                 result = await recordPayment({
                     student_id: values.student_id,
                     amount: values.amount,
+                    fee_collection_type: values.fee_collection_type,
                     payment_month: values.payment_month.toISOString(),
                     due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
                     status: "paid",
@@ -261,6 +266,27 @@ export function PaymentForm({ payment, trigger }: PaymentFormProps) {
                                         <FormControl>
                                             <Input type="number" step="0.01" {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="fee_collection_type"
+                                render={({ field }: { field: any }) => (
+                                    <FormItem>
+                                        <FormLabel>Collection</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="monthly">Monthly</SelectItem>
+                                                <SelectItem value="daily">Daily</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
