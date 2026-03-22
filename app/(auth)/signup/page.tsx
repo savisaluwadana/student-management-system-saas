@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,40 +23,35 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: 'admin',
-          },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, full_name: fullName, role: 'admin' }),
       });
 
-      if (error) {
+      const data = await res.json();
+
+      if (!res.ok) {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: error.message,
+          description: data.error || 'Signup failed',
         });
         return;
       }
 
-      if (data.user) {
-        toast({
-          title: 'Account created! 🎉',
-          description: 'Please check your email to verify your account.',
-        });
-        router.push('/login');
-      }
+      toast({
+        title: 'Account created! 🎉',
+        description: 'You are now logged in.',
+      });
+      router.push('/dashboard');
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',

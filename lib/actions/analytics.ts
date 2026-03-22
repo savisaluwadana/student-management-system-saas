@@ -1,203 +1,113 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import connectDB from '@/lib/mongodb/client';
+import Student from '@/lib/mongodb/models/Student';
+import User from '@/lib/mongodb/models/User';
+import Class from '@/lib/mongodb/models/Class';
+import TutorialModel from '@/lib/mongodb/models/Tutorial';
+import Enrollment from '@/lib/mongodb/models/Enrollment';
+import Attendance from '@/lib/mongodb/models/Attendance';
+import FeePayment from '@/lib/mongodb/models/FeePayment';
 
 export interface DashboardStats {
-    totalStudents: number;
-    totalClasses: number;
-    totalTeachers: number;
-    totalTutorials: number;
-    activeEnrollments: number;
-    attendanceRate: number;
-    revenueThisMonth: number;
-    pendingPayments: number;
+  totalStudents: number;
+  totalClasses: number;
+  totalTeachers: number;
+  totalTutorials: number;
+  activeEnrollments: number;
+  attendanceRate: number;
+  revenueThisMonth: number;
+  pendingPayments: number;
 }
 
 export interface TopClass {
-    id: string;
-    class_name: string;
-    class_code: string;
-    enrollment_count: number;
-    attendance_rate: number;
+  id: string;
+  class_name: string;
+  class_code: string;
+  enrollment_count: number;
+  attendance_rate: number;
 }
 
 export interface OverduePayment {
-    student_id: string;
-    student_name: string;
-    amount: number;
-    due_date: string;
-    days_overdue: number;
+  student_id: string;
+  student_name: string;
+  amount: number;
+  due_date: string;
+  days_overdue: number;
 }
 
-/**
- * Get comprehensive dashboard statistics
- */
 export async function getDashboardStats(): Promise<DashboardStats> {
-    const supabase = await createClient();
-    const today = new Date();
-    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  await connectDB();
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Parallel fetch all stats
-    const [
-        { count: totalStudents },
-        { count: totalClasses },
-        { count: totalTeachers },
-        { count: totalTutorials },
-        { count: activeEnrollments },
-        { data: attendanceData },
-        { data: revenueData },
-        { count: pendingPayments },
-    ] = await Promise.all([
-        supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('classes').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
-        supabase.from('tutorials').select('*', { count: 'exact', head: true }),
-        supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase
-            .from('attendance')
-            .select('status')
-            .gte('date', thirtyDaysAgo.toISOString().split('T')[0]),
-        supabase
-            .from('payment_transactions')
-            .select('amount')
-            .gte('transaction_date', firstOfMonth.toISOString().split('T')[0])
-            .eq('status', 'completed'),
-        supabase
-            .from('fee_payments')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'pending'),
+  const [totalStudents, totalClasses, totalTeachers, totalTutorials, activeEnrollments, attendanceData, revenueData, pendingPayments] =
+    await Promise.all([
+      Student.countDocuments({ status: 'active' }),
+      Class.countDocuments({ status: 'active' }),
+      User.countDocuments({ role: 'teacher' }),
+      TutorialModel.countDocuments(),
+      Enrollment.countDocuments({ status: 'active' }),
+      Attendance.find({ date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean(),
+      FeePayment.find({ status: 'paid', payment_month: { $gte: firstOfMonth.toISOString().split('T')[0] } }).select('amount').lean(),
+      FeePayment.countDocuments({ status: 'pending' }),
     ]);
 
-    // Calculate attendance rate
-    const attendanceRecords = attendanceData || [];
-    const totalAttendance = attendanceRecords.length;
-    const presentCount = attendanceRecords.filter(
-        (r) => r.status === 'present' || r.status === 'late'
-    ).length;
-    const attendanceRate = totalAttendance > 0
-        ? Math.round((presentCount / totalAttendance) * 100)
-        : 0;
+  const totalAtt = (attendanceData as any[]).length;
+  const presentCount = (attendanceData as any[]).filter((r) => r.status === 'present' || r.status === 'late').length;
+  const attendanceRate = totalAtt > 0 ? Math.round((presentCount / totalAtt) * 100) : 0;
+  const revenueThisMonth = (revenueData as any[]).reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    // Calculate revenue
-    const revenueThisMonth = (revenueData || []).reduce(
-        (sum, t) => sum + (t.amount || 0),
-        0
-    );
-
-    return {
-        totalStudents: totalStudents || 0,
-        totalClasses: totalClasses || 0,
-        totalTeachers: totalTeachers || 0,
-        totalTutorials: totalTutorials || 0,
-        activeEnrollments: activeEnrollments || 0,
-        attendanceRate,
-        revenueThisMonth,
-        pendingPayments: pendingPayments || 0,
-    };
+  return { totalStudents, totalClasses, totalTeachers, totalTutorials, activeEnrollments, attendanceRate, revenueThisMonth, pendingPayments };
 }
 
-/**
- * Get top classes by enrollment and attendance
- */
 export async function getTopClasses(limit = 5): Promise<TopClass[]> {
-    const supabase = await createClient();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  await connectDB();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get classes with enrollment counts
-    const { data: classes, error } = await supabase
-        .from('classes')
-        .select(`
-      id,
-      class_name,
-      class_code,
-      enrollments!inner(id)
-    `)
-        .eq('status', 'active')
-        .order('class_name');
+  const classes = await Class.find({ status: 'active' }).select('id class_name class_code').lean({ virtuals: true });
 
-    if (error || !classes) {
-        console.error('Error fetching top classes:', error);
-        return [];
-    }
+  const classStats = await Promise.all(
+    (classes as any[]).map(async (cls) => {
+      const [enrollCount, attendance] = await Promise.all([
+        Enrollment.countDocuments({ class_id: cls._id, status: 'active' }),
+        Attendance.find({ class_id: cls._id, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean(),
+      ]);
+      const total = (attendance as any[]).length;
+      const present = (attendance as any[]).filter((a) => a.status === 'present' || a.status === 'late').length;
+      return {
+        id: cls._id.toString(),
+        class_name: cls.class_name,
+        class_code: cls.class_code,
+        enrollment_count: enrollCount,
+        attendance_rate: total > 0 ? Math.round((present / total) * 100) : 0,
+      };
+    })
+  );
 
-    // Calculate attendance rates for each class
-    const classStats = await Promise.all(
-        classes.map(async (cls: any) => {
-            const { data: attendance } = await supabase
-                .from('attendance')
-                .select('status')
-                .eq('class_id', cls.id)
-                .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
-
-            const total = attendance?.length || 0;
-            const present = attendance?.filter(
-                (a) => a.status === 'present' || a.status === 'late'
-            ).length || 0;
-
-            return {
-                id: cls.id,
-                class_name: cls.class_name,
-                class_code: cls.class_code,
-                enrollment_count: cls.enrollments?.length || 0,
-                attendance_rate: total > 0 ? Math.round((present / total) * 100) : 0,
-            };
-        })
-    );
-
-    // Sort by enrollment count and return top N
-    return classStats
-        .sort((a, b) => b.enrollment_count - a.enrollment_count)
-        .slice(0, limit);
+  return classStats.sort((a, b) => b.enrollment_count - a.enrollment_count).slice(0, limit);
 }
 
-/**
- * Get overdue payments for the banner
- */
-export async function getOverduePayments(): Promise<{
-    payments: OverduePayment[];
-    total: number;
-}> {
-    const supabase = await createClient();
-    const today = new Date().toISOString().split('T')[0];
+export async function getOverduePayments(): Promise<{ payments: OverduePayment[]; total: number }> {
+  await connectDB();
+  const today = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabase
-        .from('fee_payments')
-        .select(`
-      id,
-      amount,
-      due_date,
-      student_id,
-      students(full_name)
-    `)
-        .eq('status', 'pending')
-        .lt('due_date', today)
-        .order('due_date', { ascending: true });
+  const data = await FeePayment.find({ status: 'pending', due_date: { $lt: today } })
+    .sort({ due_date: 1 })
+    .populate('student_id', 'full_name')
+    .lean({ virtuals: true });
 
-    if (error) {
-        console.error('Error fetching overdue payments:', error);
-        return { payments: [], total: 0 };
-    }
+  const payments = (data as any[]).map((p) => ({
+    student_id: p.student_id?._id?.toString(),
+    student_name: p.student_id?.full_name || 'Unknown',
+    amount: p.amount,
+    due_date: p.due_date,
+    days_overdue: Math.floor((new Date().getTime() - new Date(p.due_date).getTime()) / (1000 * 60 * 60 * 24)),
+  }));
 
-    const payments = (data || []).map((p: any) => {
-        const dueDate = new Date(p.due_date);
-        const todayDate = new Date();
-        const daysOverdue = Math.floor(
-            (todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        return {
-            student_id: p.student_id,
-            student_name: p.students?.full_name || 'Unknown',
-            amount: p.amount,
-            due_date: p.due_date,
-            days_overdue: daysOverdue,
-        };
-    });
-
-    const total = payments.reduce((sum, p) => sum + p.amount, 0);
-
-    return { payments, total };
+  const total = payments.reduce((sum, p) => sum + p.amount, 0);
+  return { payments, total };
 }

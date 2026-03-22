@@ -1,12 +1,16 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import connectDB from '@/lib/mongodb/client';
+import NotificationPreference from '@/lib/mongodb/models/NotificationPreference';
+import NotificationLog from '@/lib/mongodb/models/NotificationLog';
+import User from '@/lib/mongodb/models/User';
+import { getCurrentUser } from '@/lib/auth/auth';
 import { sendEmail } from '@/lib/services/notifications/email';
 import { sendSms } from '@/lib/services/notifications/sms';
 import { sendWhatsApp } from '@/lib/services/notifications/whatsapp';
 
-export interface NotificationPreference {
+export interface NotificationPreferenceType {
   id: string;
   user_id: string;
   email_notifications: boolean;
@@ -32,189 +36,93 @@ export interface UpdateNotificationPreferenceInput {
   notify_announcements?: boolean;
 }
 
-/**
- * Get notification preferences for the current user
- */
-export async function getNotificationPreferences(): Promise<NotificationPreference | null> {
-  const supabase = await createClient();
+export async function getNotificationPreferences(): Promise<NotificationPreferenceType | null> {
+  await connectDB();
+  const user = await getCurrentUser();
+  if (!user) return null;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let prefs = await NotificationPreference.findOne({ user_id: user.id }).lean({ virtuals: true });
 
-  if (!user) {
-    return null;
+  if (!prefs) {
+    const newPrefs = await NotificationPreference.create({ user_id: user.id });
+    return { ...(newPrefs.toObject({ virtuals: true })), id: newPrefs._id.toHexString() } as unknown as NotificationPreferenceType;
   }
 
-  const { data, error } = await supabase
-    .from('notification_preferences')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error) {
-    // If preferences don't exist, create default ones
-    if (error.code === 'PGRST116') {
-      const { data: newPrefs, error: createError } = await supabase
-        .from('notification_preferences')
-        .insert({
-          user_id: user.id,
-          email_notifications: true,
-          sms_notifications: false,
-          whatsapp_notifications: false,
-          notify_payments: true,
-          notify_attendance: true,
-          notify_assessments: true,
-          notify_enrollments: true,
-          notify_announcements: true,
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error creating notification preferences:', createError);
-        return null;
-      }
-
-      return newPrefs;
-    }
-
-    console.error('Error fetching notification preferences:', error);
-    return null;
-  }
-
-  return data;
+  const p = prefs as any;
+  return { ...p, id: p._id.toString() } as unknown as NotificationPreferenceType;
 }
 
-/**
- * Update notification preferences for the current user
- */
 export async function updateNotificationPreferences(
   input: UpdateNotificationPreferenceInput
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  await connectDB();
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  const { error } = await supabase
-    .from('notification_preferences')
-    .update({
-      ...input,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', user.id);
-
-  if (error) {
-    console.error('Error updating notification preferences:', error);
+  try {
+    await NotificationPreference.findOneAndUpdate(
+      { user_id: user.id },
+      { ...input, updated_at: new Date() },
+      { upsert: true }
+    );
+    revalidatePath('/settings');
+    return { success: true };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
-
-  revalidatePath('/settings');
-  return { success: true };
 }
 
-/**
- * Send notification based on user preferences
- * This is a mock implementation - in production, integrate with email/SMS/WhatsApp services
- */
 export async function sendNotification(
   userId: string,
   type: 'payment' | 'attendance' | 'assessment' | 'enrollment' | 'announcement',
   subject: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  await connectDB();
 
-  // Get user preferences
-  const { data: prefs } = await supabase
-    .from('notification_preferences')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  const prefs = await NotificationPreference.findOne({ user_id: userId }).lean();
+  if (!prefs) return { success: false, error: 'No notification preferences found' };
 
-  if (!prefs) {
-    return { success: false, error: 'No notification preferences found' };
-  }
+  const p = prefs as any;
+  const typeKey = `notify_${type}s` as keyof typeof p;
+  if (!p[typeKey]) return { success: true };
 
-  // Check if this notification type is enabled
-  const typeKey = `notify_${type}s` as keyof NotificationPreference;
-  if (!prefs[typeKey]) {
-    return { success: true }; // User has disabled this type of notification
-  }
+  const userData = await User.findById(userId).select('email phone').lean();
+  if (!userData) return { success: false, error: 'User not found' };
 
-  // Get user details
-  const { data: userData } = await supabase
-    .from('profiles')
-    .select('email, phone')
-    .eq('id', userId)
-    .single();
-
-  if (!userData) {
-    return { success: false, error: 'User not found' };
-  }
-
+  const u = userData as any;
   const notifications: string[] = [];
 
-  // Send email if enabled
-  if (prefs.email_notifications && userData.email) {
-    const res = await sendEmail({ to: userData.email, subject, message });
+  if (p.email_notifications && u.email) {
+    const res = await sendEmail({ to: u.email, subject, message });
     if (res.success) notifications.push('email');
   }
 
-  // Send SMS if enabled
-  if (prefs.sms_notifications && userData.phone) {
-    const res = await sendSms({ to: userData.phone, message });
+  if (p.sms_notifications && u.phone) {
+    const res = await sendSms({ to: u.phone, message });
     if (res.success) notifications.push('sms');
   }
 
-  // Send WhatsApp if enabled
-  if (prefs.whatsapp_notifications && userData.phone) {
-    const res = await sendWhatsApp({ to: userData.phone, message });
+  if (p.whatsapp_notifications && u.phone) {
+    const res = await sendWhatsApp({ to: u.phone, message });
     if (res.success) notifications.push('whatsapp');
   }
 
-  if (notifications.length === 0) {
-    return { success: true }; // User has all notification channels disabled
-  }
+  if (notifications.length === 0) return { success: true };
 
-  // Log the notification
-  await supabase.from('notification_logs').insert({
-    user_id: userId,
-    type,
-    subject,
-    message,
-    channels: notifications,
-    status: 'sent',
-  });
-
+  await NotificationLog.create({ user_id: userId, type, subject, message, channels: notifications, status: 'sent' });
   return { success: true };
 }
 
-/**
- * Get notification logs for the current user
- */
-export async function getNotificationLogs(limit: number = 50) {
-  const supabase = await createClient();
+export async function getNotificationLogs(limit = 50) {
+  await connectDB();
+  const user = await getCurrentUser();
+  if (!user) return [];
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const logs = await NotificationLog.find({ user_id: user.id })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .lean({ virtuals: true });
 
-  if (!user) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from('notification_logs')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching notification logs:', error);
-    return [];
-  }
-
-  return data || [];
+  return (logs as any[]).map((l) => ({ ...l, id: l._id.toString() }));
 }

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,35 +16,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
+      const data = await res.json();
+
+      if (!res.ok) {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: error.message,
+          description: data.error || 'Login failed',
         });
         return;
       }
 
-      if (data.user) {
-        toast({
-          title: 'Welcome back!',
-          description: 'Logged in successfully',
-        });
-        router.push('/dashboard');
-        router.refresh();
-      }
+      toast({
+        title: 'Welcome back!',
+        description: 'Logged in successfully',
+      });
+      router.push('/dashboard');
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',

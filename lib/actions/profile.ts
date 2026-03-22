@@ -1,68 +1,61 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import connectDB from '@/lib/mongodb/client';
+import User from '@/lib/mongodb/models/User';
+import { getCurrentUser } from '@/lib/auth/auth';
 
 export async function updateProfile(formData: {
-    full_name: string;
-    phone?: string;
-    avatar_url?: string;
+  full_name: string;
+  phone?: string;
+  avatar_url?: string;
 }): Promise<{ success: boolean; error?: string }> {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  await connectDB();
+  const user = await getCurrentUser();
 
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
+  if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { error } = await supabase
-        .from('profiles')
-        .upsert({
-            id: user.id,
-            full_name: formData.full_name,
-            phone: formData.phone,
-            avatar_url: formData.avatar_url,
-            email: user.email, // Ensure email is synced
-            updated_at: new Date().toISOString(),
-        });
-
-    if (error) {
-        console.error("Error updating profile:", error);
-        return { success: false, error: error.message };
-    }
-
+  try {
+    await User.findByIdAndUpdate(user.id, {
+      full_name: formData.full_name,
+      phone: formData.phone,
+      avatar_url: formData.avatar_url,
+    });
     revalidatePath('/settings');
     revalidatePath('/', 'layout');
     return { success: true };
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function getCurrentProfile() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  await connectDB();
+  const user = await getCurrentUser();
 
-    if (!user) return null;
+  if (!user) return null;
 
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  const profile = await User.findById(user.id).lean({ virtuals: true });
 
-    // If no profile found, return default structure based on auth user
-    if (error || !data) {
-        return {
-            id: user.id,
-            full_name: user.user_metadata?.full_name || '',
-            email: user.email,
-            avatar_url: user.user_metadata?.avatar_url || '',
-            phone: '',
-            role: user.role || 'user'
-        };
-    }
-
+  if (!profile) {
     return {
-        ...data,
-        email: user.email,
-        role: user.role || 'user'
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      avatar_url: '',
+      phone: '',
+      role: user.role,
     };
+  }
+
+  const p = profile as any;
+  return {
+    id: p._id.toString(),
+    full_name: p.full_name,
+    email: p.email,
+    phone: p.phone || '',
+    avatar_url: p.avatar_url || '',
+    role: p.role,
+  };
 }

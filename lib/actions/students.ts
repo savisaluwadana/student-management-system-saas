@@ -1,196 +1,182 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
-import type { Student, CreateStudentInput, UpdateStudentInput } from '@/types/student.types';
+import connectDB from '@/lib/mongodb/client';
+import Student from '@/lib/mongodb/models/Student';
+import Enrollment from '@/lib/mongodb/models/Enrollment';
+import Class from '@/lib/mongodb/models/Class';
+import mongoose from 'mongoose';
+import type { Student as StudentType, CreateStudentInput, UpdateStudentInput } from '@/types/student.types';
+
+function docToStudent(doc: any): StudentType {
+  const obj = doc.toObject ? doc.toObject({ virtuals: true }) : doc;
+  return { ...obj, id: obj._id?.toString() || obj.id };
+}
 
 /**
  * Get all students with optional filtering
  */
-export async function getStudents(status?: string): Promise<Student[]> {
-  const supabase = await createClient();
+export async function getStudents(status?: string): Promise<StudentType[]> {
+  await connectDB();
 
-  let query = supabase
-    .from('students')
-    .select('*, enrollments(class:classes(id, class_name, class_code))')
-    .order('created_at', { ascending: false });
+  const filter: any = {};
+  if (status) filter.status = status;
 
-  if (status) {
-    query = query.eq('status', status);
-  }
+  const students = await Student.find(filter).sort({ created_at: -1 }).lean({ virtuals: true });
 
-  const { data, error } = await query;
+  // Attach enrollments with class data
+  const result = await Promise.all(
+    students.map(async (s: any) => {
+      const enrollments = await Enrollment.find({ student_id: s._id, status: 'active' })
+        .populate('class_id', 'id class_name class_code')
+        .lean({ virtuals: true });
+      return {
+        ...s,
+        id: s._id.toString(),
+        enrollments: enrollments.map((e: any) => ({
+          class: {
+            id: e.class_id?._id?.toString(),
+            class_name: e.class_id?.class_name,
+            class_code: e.class_id?.class_code,
+          },
+        })),
+      };
+    })
+  );
 
-  if (error) {
-    console.error('Error fetching students:', error);
-    return [];
-  }
-
-  return data || [];
+  return result as unknown as StudentType[];
 }
 
 /**
  * Get a single student by ID
  */
-export async function getStudentById(id: string): Promise<Student | null> {
-  const supabase = await createClient();
+export async function getStudentById(id: string): Promise<StudentType | null> {
+  await connectDB();
 
-  const { data, error } = await supabase
-    .from('students')
-    .select('*, enrollments(class:classes(id, class_name, class_code))')
-    .eq('id', id)
-    .single();
+  if (!mongoose.isValidObjectId(id)) return null;
 
-  if (error) {
-    console.error('Error fetching student:', error);
-    return null;
-  }
+  const student = await Student.findById(id).lean({ virtuals: true });
+  if (!student) return null;
 
-  return data;
+  const s = student as any;
+  const enrollments = await Enrollment.find({ student_id: s._id, status: 'active' })
+    .populate('class_id', 'id class_name class_code')
+    .lean({ virtuals: true });
+
+  return {
+    ...s,
+    id: s._id.toString(),
+    enrollments: enrollments.map((e: any) => ({
+      class: {
+        id: e.class_id?._id?.toString(),
+        class_name: e.class_id?.class_name,
+        class_code: e.class_id?.class_code,
+      },
+    })),
+  } as unknown as StudentType;
 }
 
 /**
  * Create a new student
  */
 export async function createStudent(input: CreateStudentInput): Promise<{ success: boolean; error?: string; id?: string }> {
-  const supabase = await createClient();
+  await connectDB();
 
   const { class_ids, ...studentData } = input;
 
-  const { data, error } = await supabase
-    .from('students')
-    .insert(studentData)
-    .select()
-    .single();
+  try {
+    const student = await Student.create(studentData);
 
-  if (error) {
+    if (class_ids && class_ids.length > 0) {
+      const enrollments = class_ids.map((classId) => ({
+        student_id: student._id,
+        class_id: classId,
+        status: 'active',
+      }));
+      await Enrollment.insertMany(enrollments, { ordered: false });
+    }
+
+    revalidatePath('/students');
+    return { success: true, id: student._id.toHexString() };
+  } catch (error: any) {
     console.error('Error creating student:', error);
     return { success: false, error: error.message };
   }
-
-  // Handle class enrollments if class_ids are provided
-  if (input.class_ids && input.class_ids.length > 0) {
-    const enrollments = input.class_ids.map(classId => ({
-      student_id: data.id,
-      class_id: classId,
-      status: 'active'
-    }));
-
-    const { error: enrollmentError } = await supabase
-      .from('enrollments')
-      .insert(enrollments);
-
-    if (enrollmentError) {
-      console.error('Error creating enrollments:', enrollmentError);
-      // We don't fail the whole request but we should log it
-      // Ideally we would return a warning
-    }
-  }
-
-  revalidatePath('/students');
-  return { success: true, id: data.id };
 }
 
 /**
  * Update an existing student
  */
 export async function updateStudent(id: string, input: UpdateStudentInput): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  await connectDB();
 
-  // Separate class_ids from other student data
+  if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
+
   const { class_ids, ...studentData } = input;
 
-  const { error } = await supabase
-    .from('students')
-    .update(studentData)
-    .eq('id', id);
+  try {
+    await Student.findByIdAndUpdate(id, studentData);
 
-  if (error) {
+    if (class_ids !== undefined) {
+      const currentEnrollments = await Enrollment.find({ student_id: id }).select('class_id').lean();
+      const currentClassIds = currentEnrollments.map((e: any) => e.class_id.toString());
+
+      const classesToAdd = class_ids.filter((cid) => !currentClassIds.includes(cid));
+      const classesToRemove = currentClassIds.filter((cid) => !class_ids.includes(cid));
+
+      if (classesToAdd.length > 0) {
+        await Enrollment.insertMany(
+          classesToAdd.map((classId) => ({ student_id: id, class_id: classId, status: 'active' })),
+          { ordered: false }
+        );
+      }
+
+      if (classesToRemove.length > 0) {
+        await Enrollment.deleteMany({ student_id: id, class_id: { $in: classesToRemove } });
+      }
+    }
+
+    revalidatePath('/students');
+    revalidatePath(`/students/${id}`);
+    return { success: true };
+  } catch (error: any) {
     console.error('Error updating student:', error);
     return { success: false, error: error.message };
   }
-
-  // Handle class enrollments if class_ids is provided (even if empty, it means clear enrollments)
-  if (class_ids !== undefined) {
-    // 1. Get current enrollments
-    const { data: currentEnrollments } = await supabase
-      .from('enrollments')
-      .select('class_id')
-      .eq('student_id', id);
-
-    const currentClassIds = currentEnrollments?.map(e => e.class_id) || [];
-
-    // 2. Identify classes to add and remove
-    const classesToAdd = class_ids.filter(cid => !currentClassIds.includes(cid));
-    const classesToRemove = currentClassIds.filter(cid => !class_ids.includes(cid));
-
-    // 3. Add new enrollments
-    if (classesToAdd.length > 0) {
-      const newEnrollments = classesToAdd.map(classId => ({
-        student_id: id,
-        class_id: classId,
-        status: 'active'
-      }));
-      await supabase.from('enrollments').insert(newEnrollments);
-    }
-
-    // 4. Remove old enrollments (or mark as dropped/inactive? Requirement implies "included to a class", so removing usually means delete or drop. Let's delete for now to keep it clean, or update status if we want history. Let's delete per standard CRUD expectation unless "status" is strictly managed.)
-    // However, the schema has an 'enrollments' table with status. Let's delete for simplicity as this is a "manage classes" interface, or check if we should set to 'dropped'.
-    // Given the prompt "students should be able to be included to a class", removal might imply just strictly removing. Let's use delete for cleanup or update status if we want to preserve history. 
-    // Schema has `status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'completed', 'dropped'))`.
-    // Let's delete to ensure the "Enrollment" state reflects the checkboxes exactly.
-    if (classesToRemove.length > 0) {
-      await supabase
-        .from('enrollments')
-        .delete()
-        .eq('student_id', id)
-        .in('class_id', classesToRemove);
-    }
-  }
-
-  revalidatePath('/students');
-  revalidatePath(`/students/${id}`);
-  return { success: true };
 }
 
 /**
  * Delete a student
  */
 export async function deleteStudent(id: string): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  await connectDB();
 
-  const { error } = await supabase
-    .from('students')
-    .delete()
-    .eq('id', id);
+  if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
 
-  if (error) {
+  try {
+    await Student.findByIdAndDelete(id);
+    await Enrollment.deleteMany({ student_id: id });
+    revalidatePath('/students');
+    return { success: true };
+  } catch (error: any) {
     console.error('Error deleting student:', error);
     return { success: false, error: error.message };
   }
-
-  revalidatePath('/students');
-  return { success: true };
 }
 
 /**
  * Get student payment summary
  */
 export async function getStudentPaymentSummary(studentId: string) {
-  const supabase = await createClient();
+  await connectDB();
+  const FeePayment = (await import('@/lib/mongodb/models/FeePayment')).default;
 
-  const { data, error } = await supabase
-    .from('student_payment_summary')
-    .select('*')
-    .eq('student_id', studentId)
-    .single();
+  const payments = await FeePayment.find({ student_id: studentId }).lean();
+  const total = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+  const paid = payments.filter((p: any) => p.status === 'paid').reduce((sum: number, p: any) => sum + p.amount, 0);
+  const pending = payments.filter((p: any) => p.status === 'pending' || p.status === 'overdue').reduce((sum: number, p: any) => sum + p.amount, 0);
 
-  if (error) {
-    console.error('Error fetching payment summary:', error);
-    return null;
-  }
-
-  return data;
+  return { student_id: studentId, total_amount: total, paid_amount: paid, pending_amount: pending };
 }
 
 /**
@@ -199,80 +185,42 @@ export async function getStudentPaymentSummary(studentId: string) {
 export async function bulkCreateStudents(
   students: CreateStudentInput[]
 ): Promise<{ success: boolean; imported?: number; failed?: number; errors?: string[] }> {
-  const supabase = await createClient();
+  await connectDB();
 
   const errors: string[] = [];
   let imported = 0;
   let failed = 0;
 
-  // Insert in batches of 50
   const batchSize = 50;
   for (let i = 0; i < students.length; i += batchSize) {
-    const batch = students.slice(i, i + batchSize).map(s => {
-      const { class_ids, ...rest } = s;
-      return rest;
-    });
-
-    const { data, error } = await supabase
-      .from('students')
-      .insert(batch)
-      .select();
-
-    if (error) {
+    const batch = students.slice(i, i + batchSize).map(({ class_ids, ...rest }) => rest);
+    try {
+      const result = await Student.insertMany(batch, { ordered: false });
+      imported += result.length;
+    } catch (error: any) {
       errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
       failed += batch.length;
-    } else {
-      imported += data?.length || 0;
     }
   }
 
   revalidatePath('/students');
-
-  return {
-    success: errors.length === 0,
-    imported,
-    failed,
-    errors: errors.length > 0 ? errors : undefined,
-  };
+  return { success: errors.length === 0, imported, failed, errors: errors.length > 0 ? errors : undefined };
 }
 
 /**
  * Get all students for export
  */
-export async function getAllStudentsForExport(): Promise<Student[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('students')
-    .select('*')
-    .order('student_code', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching students for export:', error);
-    return [];
-  }
-
-  return data || [];
+export async function getAllStudentsForExport(): Promise<StudentType[]> {
+  await connectDB();
+  const students = await Student.find({}).sort({ student_code: 1 }).lean({ virtuals: true });
+  return students.map((s: any) => ({ ...s, id: s._id.toString() })) as unknown as StudentType[];
 }
 
 /**
- * Get all enrollments for a student
+ * Get all active enrollments for a student
  */
 export async function getStudentEnrollments(studentId: string): Promise<string[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('enrollments')
-    .select('class_id')
-    .eq('student_id', studentId)
-    .eq('status', 'active');
-
-  if (error) {
-    console.error('Error fetching student enrollments:', error);
-    return [];
-  }
-
-  return data?.map(enrollment => enrollment.class_id) || [];
+  await connectDB();
+  const enrollments = await Enrollment.find({ student_id: studentId, status: 'active' }).select('class_id').lean();
+  return enrollments.map((e: any) => e.class_id.toString());
 }
-
-

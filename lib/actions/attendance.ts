@@ -1,493 +1,333 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import connectDB from '@/lib/mongodb/client';
+import AttendanceModel from '@/lib/mongodb/models/Attendance';
+import Enrollment from '@/lib/mongodb/models/Enrollment';
+import Student from '@/lib/mongodb/models/Student';
+import Class from '@/lib/mongodb/models/Class';
+import { getCurrentUser } from '@/lib/auth/auth';
+import mongoose from 'mongoose';
 import type {
-    Attendance,
-    AttendanceWithStudent,
-    MarkAttendanceInput,
-    StudentAttendanceSummary,
-    ClassAttendanceDaily,
-    ClassWithEnrollmentCount,
-    EnrolledStudentForAttendance,
-    AttendanceStatus,
+  Attendance,
+  AttendanceWithStudent,
+  MarkAttendanceInput,
+  StudentAttendanceSummary,
+  ClassAttendanceDaily,
+  ClassWithEnrollmentCount,
+  EnrolledStudentForAttendance,
+  AttendanceStatus,
 } from '@/types/attendance.types';
 
-/**
- * Get all active classes with enrollment counts for attendance marking
- */
 export async function getClassesForAttendance(): Promise<ClassWithEnrollmentCount[]> {
-    const supabase = await createClient();
+  await connectDB();
 
-    const { data, error } = await supabase
-        .from('classes')
-        .select(`
-      id,
-      institute_id,
-      class_code,
-      class_name,
-      subject,
-      schedule,
-      enrollments(id)
-    `)
-        .eq('status', 'active')
-        .order('class_name');
+  const classes = await Class.find({ status: 'active' }).sort({ class_name: 1 }).lean({ virtuals: true });
 
-    if (error) {
-        console.error('Error fetching classes for attendance:', error);
-        return [];
-    }
-
-    return (data || []).map((cls: any) => ({
-        id: cls.id,
-        institute_id: cls.institute_id,
+  return await Promise.all(
+    (classes as any[]).map(async (cls) => {
+      const count = await Enrollment.countDocuments({ class_id: cls._id, status: 'active' });
+      return {
+        id: cls._id.toString(),
+        institute_id: cls.institute_id?.toString(),
         class_code: cls.class_code,
         class_name: cls.class_name,
         subject: cls.subject,
         schedule: cls.schedule,
-        enrollment_count: cls.enrollments?.length || 0,
-    }));
+        enrollment_count: count,
+      };
+    })
+  );
 }
 
-/**
- * Get enrolled students for a class with their attendance for a specific date
- */
 export async function getEnrolledStudentsWithAttendance(
-    classId: string,
-    date: string
+  classId: string,
+  date: string
 ): Promise<EnrolledStudentForAttendance[]> {
-    const supabase = await createClient();
+  await connectDB();
 
-    // Get enrolled students
-    const { data: enrollments, error: enrollmentError } = await supabase
-        .from('enrollments')
-        .select(`
-      student_id,
-      students(id, student_code, full_name)
-    `)
-        .eq('class_id', classId)
-        .eq('status', 'active');
+  const enrollments = await Enrollment.find({ class_id: classId, status: 'active' })
+    .populate('student_id', 'id student_code full_name')
+    .lean({ virtuals: true });
 
-    if (enrollmentError) {
-        console.error('Error fetching enrolled students:', enrollmentError);
-        return [];
-    }
+  const attendanceRecords = await AttendanceModel.find({ class_id: classId, date }).lean({ virtuals: true });
+  const attendanceMap = new Map((attendanceRecords as any[]).map((a) => [a.student_id.toString(), a]));
 
-    // Get existing attendance for this date
-    const { data: attendanceRecords, error: attendanceError } = await supabase
-        .from('attendance')
-        .select('student_id, status, notes')
-        .eq('class_id', classId)
-        .eq('date', date);
-
-    if (attendanceError) {
-        console.error('Error fetching attendance:', attendanceError);
-    }
-
-    // Map attendance to students
-    const attendanceMap = new Map(
-        (attendanceRecords || []).map((a) => [a.student_id, a])
-    );
-
-    return (enrollments || []).map((e: any) => ({
-        student_id: e.students.id,
-        student_code: e.students.student_code,
-        full_name: e.students.full_name,
-        attendance_status: attendanceMap.get(e.student_id)?.status,
-        attendance_notes: attendanceMap.get(e.student_id)?.notes,
-    }));
+  return (enrollments as any[]).map((e) => ({
+    student_id: e.student_id?._id?.toString(),
+    student_code: e.student_id?.student_code,
+    full_name: e.student_id?.full_name,
+    attendance_status: attendanceMap.get(e.student_id?._id?.toString())?.status,
+    attendance_notes: attendanceMap.get(e.student_id?._id?.toString())?.notes,
+  }));
 }
 
-/**
- * Mark attendance for multiple students in a class
- */
 export async function markAttendance(
-    input: MarkAttendanceInput
+  input: MarkAttendanceInput
 ): Promise<{ success: boolean; error?: string; count?: number }> {
-    const supabase = await createClient();
+  await connectDB();
+  const currentUser = await getCurrentUser();
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Prepare upsert data
-    const attendanceData = input.records.map((record) => ({
-        class_id: input.class_id,
-        student_id: record.student_id,
-        date: input.date,
-        status: record.status,
-        marked_by: user?.id,
-        notes: record.notes || null,
-    }));
-
-    // Upsert attendance records (update if exists, insert if not)
-    const { error } = await supabase
-        .from('attendance')
-        .upsert(attendanceData, {
-            onConflict: 'class_id,student_id,date',
-        });
-
-    if (error) {
-        console.error('Error marking attendance:', error);
-        return { success: false, error: error.message };
-    }
+  try {
+    await Promise.all(
+      input.records.map((record) =>
+        AttendanceModel.findOneAndUpdate(
+          { class_id: input.class_id, student_id: record.student_id, date: input.date },
+          {
+            class_id: input.class_id,
+            student_id: record.student_id,
+            date: input.date,
+            status: record.status,
+            marked_by: currentUser?.id,
+            notes: record.notes || null,
+          },
+          { upsert: true, new: true }
+        )
+      )
+    );
 
     revalidatePath('/attendance');
     revalidatePath(`/attendance/mark/${input.class_id}`);
     return { success: true, count: input.records.length };
+  } catch (error: any) {
+    console.error('Error marking attendance:', error);
+    return { success: false, error: error.message };
+  }
 }
 
-/**
- * Get attendance for a specific class on a specific date
- */
 export async function getAttendanceByClassAndDate(
-    classId: string,
-    date: string
+  classId: string,
+  date: string
 ): Promise<AttendanceWithStudent[]> {
-    const supabase = await createClient();
+  await connectDB();
 
-    const { data, error } = await supabase
-        .from('attendance')
-        .select(`
-      *,
-      student:students(id, student_code, full_name)
-    `)
-        .eq('class_id', classId)
-        .eq('date', date);
+  const records = await AttendanceModel.find({ class_id: classId, date })
+    .populate('student_id', 'id student_code full_name')
+    .lean({ virtuals: true });
 
-    if (error) {
-        console.error('Error fetching attendance:', error);
-        return [];
-    }
-
-    return data || [];
+  return (records as any[]).map((r) => ({
+    ...r,
+    id: r._id.toString(),
+    student: {
+      id: r.student_id?._id?.toString(),
+      student_code: r.student_id?.student_code,
+      full_name: r.student_id?.full_name,
+    },
+  })) as unknown as AttendanceWithStudent[];
 }
 
-/**
- * Get attendance summary for a student across all classes
- */
-export async function getStudentAttendanceSummary(
-    studentId: string
-): Promise<StudentAttendanceSummary[]> {
-    const supabase = await createClient();
+export async function getStudentAttendanceSummary(studentId: string): Promise<StudentAttendanceSummary[]> {
+  await connectDB();
 
-    const { data, error } = await supabase
-        .from('student_attendance_summary')
-        .select('*')
-        .eq('student_id', studentId);
+  const summary = await AttendanceModel.aggregate([
+    { $match: { student_id: new mongoose.Types.ObjectId(studentId) } },
+    {
+      $group: {
+        _id: '$class_id',
+        total: { $sum: 1 },
+        present: { $sum: { $cond: [{ $in: ['$status', ['present', 'late']] }, 1, 0] } },
+        absent: { $sum: { $cond: [{ $eq: ['$status', 'absent'] }, 1, 0] } },
+        late: { $sum: { $cond: [{ $eq: ['$status', 'late'] }, 1, 0] } },
+      },
+    },
+    {
+      $lookup: {
+        from: 'classes',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'class',
+      },
+    },
+    { $unwind: { path: '$class', preserveNullAndEmpty: true } },
+  ]);
 
-    if (error) {
-        console.error('Error fetching student attendance summary:', error);
-        return [];
-    }
-
-    return data || [];
+  return summary.map((s) => ({
+    student_id: studentId,
+    class_id: s._id.toString(),
+    class_name: s.class?.class_name,
+    total_classes: s.total,
+    present_count: s.present,
+    absent_count: s.absent,
+    late_count: s.late,
+    attendance_rate: s.total > 0 ? Math.round((s.present / s.total) * 100) : 0,
+  })) as unknown as StudentAttendanceSummary[];
 }
 
-/**
- * Get daily attendance summary for all classes (for dashboard)
- */
 export async function getTodayAttendanceSummary(): Promise<ClassAttendanceDaily[]> {
-    const supabase = await createClient();
-    const today = new Date().toISOString().split('T')[0];
+  await connectDB();
+  const today = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabase
-        .from('class_attendance_daily')
-        .select('*')
-        .eq('date', today);
+  const summary = await AttendanceModel.aggregate([
+    { $match: { date: today } },
+    {
+      $group: {
+        _id: '$class_id',
+        total: { $sum: 1 },
+        present: { $sum: { $cond: [{ $in: ['$status', ['present', 'late']] }, 1, 0] } },
+        absent: { $sum: { $cond: [{ $eq: ['$status', 'absent'] }, 1, 0] } },
+        late: { $sum: { $cond: [{ $eq: ['$status', 'late'] }, 1, 0] } },
+      },
+    },
+    { $lookup: { from: 'classes', localField: '_id', foreignField: '_id', as: 'class' } },
+    { $unwind: { path: '$class', preserveNullAndEmpty: true } },
+  ]);
 
-    if (error) {
-        console.error('Error fetching today attendance summary:', error);
-        return [];
-    }
-
-    return data || [];
+  return summary.map((s) => ({
+    class_id: s._id.toString(),
+    class_name: s.class?.class_name,
+    date: today,
+    total_students: s.total,
+    present_count: s.present,
+    absent_count: s.absent,
+    late_count: s.late,
+  })) as unknown as ClassAttendanceDaily[];
 }
 
-/**
- * Get attendance history for a class within a date range
- */
 export async function getClassAttendanceHistory(
-    classId: string,
-    startDate: string,
-    endDate: string
+  classId: string,
+  startDate: string,
+  endDate: string
 ): Promise<ClassAttendanceDaily[]> {
-    const supabase = await createClient();
+  await connectDB();
 
-    const { data, error } = await supabase
-        .from('class_attendance_daily')
-        .select('*')
-        .eq('class_id', classId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false });
+  const summary = await AttendanceModel.aggregate([
+    { $match: { class_id: new mongoose.Types.ObjectId(classId), date: { $gte: startDate, $lte: endDate } } },
+    {
+      $group: {
+        _id: '$date',
+        total: { $sum: 1 },
+        present: { $sum: { $cond: [{ $in: ['$status', ['present', 'late']] }, 1, 0] } },
+        absent: { $sum: { $cond: [{ $eq: ['$status', 'absent'] }, 1, 0] } },
+        late: { $sum: { $cond: [{ $eq: ['$status', 'late'] }, 1, 0] } },
+      },
+    },
+    { $sort: { _id: -1 } },
+  ]);
 
-    if (error) {
-        console.error('Error fetching class attendance history:', error);
-        return [];
-    }
-
-    return data || [];
+  return summary.map((s) => ({
+    class_id: classId,
+    date: s._id,
+    total_students: s.total,
+    present_count: s.present,
+    absent_count: s.absent,
+    late_count: s.late,
+  })) as unknown as ClassAttendanceDaily[];
 }
 
-/**
- * Get overall attendance statistics
- */
 export async function getAttendanceStats(): Promise<{
-    totalMarkedToday: number;
-    presentToday: number;
-    absentToday: number;
-    overallAttendanceRate: number;
+  totalMarkedToday: number;
+  presentToday: number;
+  absentToday: number;
+  overallAttendanceRate: number;
 }> {
-    const supabase = await createClient();
-    const today = new Date().toISOString().split('T')[0];
+  await connectDB();
+  const today = new Date().toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get today's stats
-    const { data: todayData, error: todayError } = await supabase
-        .from('attendance')
-        .select('status')
-        .eq('date', today);
+  const todayRecords = await AttendanceModel.find({ date: today }).select('status').lean();
+  const totalMarkedToday = todayRecords.length;
+  const presentToday = todayRecords.filter((r: any) => r.status === 'present' || r.status === 'late').length;
+  const absentToday = todayRecords.filter((r: any) => r.status === 'absent').length;
 
-    if (todayError) {
-        console.error('Error fetching today stats:', todayError);
-    }
+  const monthRecords = await AttendanceModel.find({ date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean();
+  const totalMonth = monthRecords.length;
+  const presentMonth = monthRecords.filter((r: any) => r.status === 'present' || r.status === 'late').length;
+  const overallAttendanceRate = totalMonth > 0 ? Math.round((presentMonth / totalMonth) * 100) : 0;
 
-    const todayRecords = todayData || [];
-    const totalMarkedToday = todayRecords.length;
-    const presentToday = todayRecords.filter(
-        (r) => r.status === 'present' || r.status === 'late'
-    ).length;
-    const absentToday = todayRecords.filter((r) => r.status === 'absent').length;
-
-    // Get last 30 days stats for overall rate
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const { data: monthData, error: monthError } = await supabase
-        .from('attendance')
-        .select('status')
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
-
-    if (monthError) {
-        console.error('Error fetching month stats:', monthError);
-    }
-
-    const monthRecords = monthData || [];
-    const totalMonth = monthRecords.length;
-    const presentMonth = monthRecords.filter(
-        (r) => r.status === 'present' || r.status === 'late'
-    ).length;
-    const overallAttendanceRate =
-        totalMonth > 0 ? Math.round((presentMonth / totalMonth) * 100) : 0;
-
-    return {
-        totalMarkedToday,
-        presentToday,
-        absentToday,
-        overallAttendanceRate,
-    };
+  return { totalMarkedToday, presentToday, absentToday, overallAttendanceRate };
 }
 
-/**
- * Delete attendance record
- */
-export async function deleteAttendance(
-    id: string
-): Promise<{ success: boolean; error?: string }> {
-    const supabase = await createClient();
+export async function deleteAttendance(id: string): Promise<{ success: boolean; error?: string }> {
+  await connectDB();
 
-    const { error } = await supabase
-        .from('attendance')
-        .delete()
-        .eq('id', id);
+  if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
 
-    if (error) {
-        console.error('Error deleting attendance:', error);
-        return { success: false, error: error.message };
-    }
-
+  try {
+    await AttendanceModel.findByIdAndDelete(id);
     revalidatePath('/attendance');
     return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting attendance:', error);
+    return { success: false, error: error.message };
+  }
 }
 
+export async function getStudentAttendanceHistory(studentId: string, limit = 50): Promise<any[]> {
+  await connectDB();
 
-/**
- * Get detailed attendance history for a student
- */
-export async function getStudentAttendanceHistory(
-    studentId: string,
-    limit = 50
-): Promise<any[]> {
-    const supabase = await createClient();
+  const records = await AttendanceModel.find({ student_id: studentId })
+    .sort({ date: -1 })
+    .limit(limit)
+    .populate('class_id', 'class_name subject')
+    .lean({ virtuals: true });
 
-    const { data, error } = await supabase
-        .from('attendance')
-        .select(`
-            id,
-            date,
-            status,
-            notes,
-            classes(class_name, subject)
-        `)
-        .eq('student_id', studentId)
-        .order('date', { ascending: false })
-        .limit(limit);
-
-    if (error) {
-        console.error('Error fetching student attendance history:', error);
-        return [];
-    }
-
-    return data || [];
+  return (records as any[]).map((r) => ({
+    id: r._id.toString(),
+    date: r.date,
+    status: r.status,
+    notes: r.notes,
+    classes: { class_name: r.class_id?.class_name, subject: r.class_id?.subject },
+  }));
 }
 
-/**
- * Mark bulk attendance for multiple students at once
- */
 export async function markBulkAttendance(
-    classId: string,
-    date: string,
-    records: Array<{ student_id: string; status: AttendanceStatus }>
+  classId: string,
+  date: string,
+  records: Array<{ student_id: string; status: AttendanceStatus }>
 ): Promise<{ success: boolean; error?: string; count?: number }> {
-    const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Prepare upsert data
-    const attendanceData = records.map((record) => ({
-        class_id: classId,
-        student_id: record.student_id,
-        date: date,
-        status: record.status,
-        marked_by: user?.id,
-    }));
-
-    // Upsert attendance records
-    const { error } = await supabase
-        .from('attendance')
-        .upsert(attendanceData, {
-            onConflict: 'class_id,student_id,date',
-        });
-
-    if (error) {
-        console.error('Error marking bulk attendance:', error);
-        return { success: false, error: error.message };
-    }
-
-    revalidatePath('/attendance');
-    revalidatePath('/attendance/bulk');
-    return { success: true, count: records.length };
+  return markAttendance({ class_id: classId, date, records });
 }
 
-/**
- * Mark attendance using barcode (scan mode)
- */
 export async function markAttendanceByBarcode(
-    classId: string,
-    date: string,
-    barcode: string
+  classId: string,
+  date: string,
+  barcode: string
 ): Promise<{ success: boolean; message?: string; studentName?: string }> {
-    const supabase = await createClient();
+  await connectDB();
+  const currentUser = await getCurrentUser();
 
-    // Find student by barcode or student_code
-    const { data: student, error: studentError } = await supabase
-        .from('students')
-        .select('id, student_code, full_name, barcode')
-        .or(`barcode.eq.${barcode},student_code.eq.${barcode}`)
-        .single();
+  const student = await Student.findOne({ $or: [{ barcode }, { student_code: barcode }] }).lean({ virtuals: true });
+  if (!student) return { success: false, message: 'Student not found' };
 
-    if (studentError || !student) {
-        return { success: false, message: 'Student not found' };
-    }
+  const s = student as any;
+  const enrollment = await Enrollment.findOne({ student_id: s._id, class_id: classId, status: 'active' });
+  if (!enrollment) return { success: false, message: 'Not enrolled in class', studentName: s.full_name };
 
-    // Check if student is enrolled in this class
-    const { data: enrollment, error: enrollmentError } = await supabase
-        .from('enrollments')
-        .select('id')
-        .eq('student_id', student.id)
-        .eq('class_id', classId)
-        .eq('status', 'active')
-        .single();
-
-    if (enrollmentError || !enrollment) {
-        return {
-            success: false,
-            message: 'Not enrolled in class',
-            studentName: student.full_name
-        };
-    }
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Mark attendance as present
-    const { error: attendanceError } = await supabase
-        .from('attendance')
-        .upsert({
-            class_id: classId,
-            student_id: student.id,
-            date: date,
-            status: 'present',
-            marked_by: user?.id,
-        }, {
-            onConflict: 'class_id,student_id,date',
-        });
-
-    if (attendanceError) {
-        return {
-            success: false,
-            message: 'Failed to mark',
-            studentName: student.full_name
-        };
-    }
+  try {
+    await AttendanceModel.findOneAndUpdate(
+      { class_id: classId, student_id: s._id, date },
+      { class_id: classId, student_id: s._id, date, status: 'present', marked_by: currentUser?.id },
+      { upsert: true, new: true }
+    );
 
     revalidatePath('/attendance');
-    revalidatePath('/attendance/scan');
-
-    return {
-        success: true,
-        message: 'Marked present',
-        studentName: student.full_name
-    };
+    return { success: true, message: 'Marked present', studentName: s.full_name };
+  } catch (error: any) {
+    return { success: false, message: 'Failed to mark', studentName: s.full_name };
+  }
 }
 
-/**
- * Get 30-day attendance trend data for analytics
- */
-export async function getAttendanceTrend(): Promise<Array<{
-    date: string;
-    present: number;
-    absent: number;
-    late: number;
-    total: number;
-}>> {
-    const supabase = await createClient();
+export async function getAttendanceTrend(): Promise<Array<{ date: string; present: number; absent: number; late: number; total: number }>> {
+  await connectDB();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const records = await AttendanceModel.find({ date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } })
+    .select('date status')
+    .sort({ date: 1 })
+    .lean();
 
-    const { data, error } = await supabase
-        .from('attendance')
-        .select('date, status')
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('date', { ascending: true });
-
-    if (error) {
-        console.error('Error fetching attendance trend:', error);
-        return [];
+  const grouped = (records as any[]).reduce((acc: any, record) => {
+    if (!acc[record.date]) {
+      acc[record.date] = { date: record.date, present: 0, absent: 0, late: 0, total: 0 };
     }
+    acc[record.date].total++;
+    if (record.status === 'present') acc[record.date].present++;
+    else if (record.status === 'absent') acc[record.date].absent++;
+    else if (record.status === 'late') acc[record.date].late++;
+    return acc;
+  }, {});
 
-    // Group by date
-    const grouped = (data || []).reduce((acc: any, record) => {
-        if (!acc[record.date]) {
-            acc[record.date] = { date: record.date, present: 0, absent: 0, late: 0, total: 0 };
-        }
-        acc[record.date].total++;
-        if (record.status === 'present') acc[record.date].present++;
-        else if (record.status === 'absent') acc[record.date].absent++;
-        else if (record.status === 'late') acc[record.date].late++;
-        return acc;
-    }, {});
-
-    return Object.values(grouped);
+  return Object.values(grouped);
 }
