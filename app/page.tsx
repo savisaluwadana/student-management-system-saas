@@ -16,12 +16,11 @@ import {
   Building2,
   Globe,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth/auth';
 import { redirect } from 'next/navigation';
 
 export default async function LandingPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (user) {
     redirect('/dashboard');

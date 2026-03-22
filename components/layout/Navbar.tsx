@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Search, Menu, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,10 +24,9 @@ import {
 export function Navbar({ user }: { user?: any }) {
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out',

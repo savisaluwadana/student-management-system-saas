@@ -20,6 +20,9 @@ export interface InstituteType {
   updated_at: string;
 }
 
+// Backward-compatibility alias
+export type Institute = InstituteType;
+
 export interface InstituteSummary extends InstituteType {
   total_students: number;
   total_classes: number;
@@ -61,9 +64,9 @@ export async function createInstitute(formData: FormData) {
   const instituteData = {
     code: formData.get('code') as string,
     name: formData.get('name') as string,
-    address: formData.get('address') as string || null,
-    phone: formData.get('phone') as string || null,
-    email: formData.get('email') as string || null,
+    address: (formData.get('address') as string) || undefined,
+    phone: (formData.get('phone') as string) || undefined,
+    email: (formData.get('email') as string) || undefined,
     status: (formData.get('status') as string) || 'active',
   };
 
