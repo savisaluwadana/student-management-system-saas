@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-// bcrypt loaded via require to avoid TypeScript ES module callable type error
-const bcrypt = require('bcryptjs') as typeof import('bcryptjs');
+import bcrypt from 'bcryptjs';
 
 
 export interface IUser extends Document {

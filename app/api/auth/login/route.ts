@@ -34,7 +34,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const isPasswordValid = await user.comparePassword(password);
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await user.comparePassword(password);
+    } catch (compareError) {
+      console.error('Password compare failed:', compareError);
+      isPasswordValid = false;
+    }
+
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
