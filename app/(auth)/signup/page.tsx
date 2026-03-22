@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +20,6 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -32,6 +30,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password, full_name: fullName, role: 'admin' }),
       });
 
@@ -50,8 +49,7 @@ export default function SignupPage() {
         title: 'Account created! 🎉',
         description: 'You are now logged in.',
       });
-      router.push('/dashboard');
-      router.refresh();
+      window.location.assign('/dashboard');
     } catch (error) {
       toast({
         variant: 'destructive',

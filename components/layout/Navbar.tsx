@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Search, Menu, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -22,17 +21,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navbar({ user }: { user?: any }) {
-  const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out',
     });
-    router.push('/login');
-    router.refresh();
+    window.location.assign('/login');
   };
 
   return (

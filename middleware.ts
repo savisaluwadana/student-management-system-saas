@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth/auth';
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
-  const user = token ? verifyToken(token) : null;
+  const isAuthenticated = Boolean(token);
 
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/signup', '/reset-password', '/docs'];
@@ -15,12 +14,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect all non-public routes
-  if (!isPublicRoute && !user) {
+  if (!isPublicRoute && !isAuthenticated) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Redirect authenticated users away from auth pages
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  if (isAuthenticated && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
