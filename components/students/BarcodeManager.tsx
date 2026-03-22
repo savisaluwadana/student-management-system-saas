@@ -99,8 +99,8 @@ export function BarcodeManager({ students }: BarcodeManagerProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                            <CheckCircle2 className="h-6 w-6 text-green-500" />
+                        <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                            <CheckCircle2 className="h-6 w-6 text-zinc-800" />
                         </div>
                         <div>
                             <p className="text-2xl font-bold">{studentsWithBarcode.length}</p>
@@ -110,8 +110,8 @@ export function BarcodeManager({ students }: BarcodeManagerProps) {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                            <QrCode className="h-6 w-6 text-yellow-500" />
+                        <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                            <QrCode className="h-6 w-6 text-zinc-800" />
                         </div>
                         <div>
                             <p className="text-2xl font-bold">{studentsWithoutBarcode.length}</p>
@@ -205,7 +205,7 @@ export function BarcodeManager({ students }: BarcodeManagerProps) {
                                         </TableCell>
                                         <TableCell>
                                             {student.barcode ? (
-                                                <code className="text-sm bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-1 rounded font-mono">
+                                                <code className="text-sm bg-zinc-800/10 text-zinc-900 dark:text-zinc-300 px-2 py-1 rounded font-mono">
                                                     {student.barcode}
                                                 </code>
                                             ) : (

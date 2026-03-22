@@ -81,12 +81,12 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                     <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold">{stats.avg}%</span>
                         {stats.trend === 'up' ? (
-                            <div className="flex items-center text-green-500 text-sm">
+                            <div className="flex items-center text-zinc-800 text-sm">
                                 <TrendingUp className="h-4 w-4 mr-1" />
                                 +{stats.change}%
                             </div>
                         ) : stats.trend === 'down' ? (
-                            <div className="flex items-center text-red-500 text-sm">
+                            <div className="flex items-center text-zinc-800 text-sm">
                                 <TrendingDown className="h-4 w-4 mr-1" />
                                 -{stats.change}%
                             </div>
@@ -126,7 +126,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                                         style={{ height: '100%' }}
                                     >
                                         <div
-                                            className={`absolute bottom-0 w-full rounded-t transition-all duration-200 hover:opacity-80 ${isGood ? 'bg-green-500' : isMedium ? 'bg-yellow-500' : 'bg-red-500'
+                                            className={`absolute bottom-0 w-full rounded-t transition-all duration-200 hover:opacity-80 ${isGood ? 'bg-zinc-800' : isMedium ? 'bg-zinc-800' : 'bg-zinc-800'
                                                 }`}
                                             style={{ height: `${Math.max(barHeight, 2)}px` }}
                                         />
@@ -136,9 +136,9 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                                             <div className="bg-popover text-popover-foreground text-xs rounded-lg shadow-lg p-2 whitespace-nowrap border">
                                                 <div className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                                                 <div className="text-muted-foreground">Rate: {day.rate}%</div>
-                                                <div className="text-green-500">Present: {day.present}</div>
-                                                <div className="text-red-500">Absent: {day.absent}</div>
-                                                <div className="text-yellow-500">Late: {day.late}</div>
+                                                <div className="text-zinc-800">Present: {day.present}</div>
+                                                <div className="text-zinc-800">Absent: {day.absent}</div>
+                                                <div className="text-zinc-800">Late: {day.late}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -161,15 +161,15 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                 {/* Legend */}
                 <div className="flex items-center justify-center gap-4 mt-4 text-xs">
                     <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-sm bg-green-500" />
+                        <div className="w-3 h-3 rounded-sm bg-zinc-800" />
                         <span className="text-muted-foreground">≥80%</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-sm bg-yellow-500" />
+                        <div className="w-3 h-3 rounded-sm bg-zinc-800" />
                         <span className="text-muted-foreground">60-79%</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-sm bg-red-500" />
+                        <div className="w-3 h-3 rounded-sm bg-zinc-800" />
                         <span className="text-muted-foreground">&lt;60%</span>
                     </div>
                 </div>

@@ -166,7 +166,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 <button
                   type="button"
                   onClick={removePhoto}
-                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                  className="absolute top-1 right-1 p-1 bg-zinc-800 text-white rounded-full hover:bg-zinc-800 transition-colors z-10"
                 >
                   <X className="h-3 w-3" />
                 </button>

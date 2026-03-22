@@ -137,12 +137,12 @@ export function InstituteList({ institutes }: InstituteListProps) {
 
                                 <div className="flex items-center gap-4 mt-4 pt-4 border-t">
                                     <div className="flex items-center gap-2">
-                                        <Users className="h-4 w-4 text-blue-500" />
+                                        <Users className="h-4 w-4 text-zinc-800" />
                                         <span className="text-sm font-medium">{institute.total_students}</span>
                                         <span className="text-sm text-muted-foreground">Students</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <BookOpen className="h-4 w-4 text-green-500" />
+                                        <BookOpen className="h-4 w-4 text-zinc-800" />
                                         <span className="text-sm font-medium">{institute.total_classes}</span>
                                         <span className="text-sm text-muted-foreground">Classes</span>
                                     </div>

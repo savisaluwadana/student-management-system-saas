@@ -37,8 +37,8 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                   LKR {paymentStats.totalRevenue.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -53,12 +53,12 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                   LKR {paymentStats.paidAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-blue-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
             <div className="mt-2 flex items-center text-sm">
-              <span className="text-green-600 font-medium">
+              <span className="text-zinc-800 font-medium">
                 {((paymentStats.paidAmount / paymentStats.totalRevenue) * 100).toFixed(1)}%
               </span>
               <span className="text-muted-foreground ml-1">of total</span>
@@ -75,8 +75,8 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                   LKR {paymentStats.pendingAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-yellow-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -87,12 +87,12 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                <p className="text-2xl font-bold mt-1 text-red-600">
+                <p className="text-2xl font-bold mt-1 text-zinc-800">
                   LKR {paymentStats.overdueAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <TrendingDown className="h-6 w-6 text-red-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <TrendingDown className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -126,7 +126,7 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-zinc-800 to-zinc-800 transition-all duration-500"
                       style={{ width: `${widthPercent}%` }}
                     />
                   </div>
@@ -142,7 +142,7 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
+              <AlertCircle className="h-5 w-5 text-zinc-800" />
               Payment Defaulters
             </CardTitle>
             <CardDescription>Students with overdue payments</CardDescription>
@@ -169,7 +169,7 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                       <TableCell>
                         <Badge variant="outline">{defaulter.student_code}</Badge>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-red-600">
+                      <TableCell className="text-right font-semibold text-zinc-800">
                         LKR {defaulter.total_pending.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
@@ -187,7 +187,7 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
+              <Users className="h-5 w-5 text-zinc-800" />
               Revenue by Class
             </CardTitle>
             <CardDescription>Top revenue-generating classes</CardDescription>
@@ -213,7 +213,7 @@ export function FinancialReportsContent({ data }: FinancialReportsProps) {
                       <TableCell className="text-right">
                         <Badge variant="secondary">{classRev.students}</Badge>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-green-600">
+                      <TableCell className="text-right font-semibold text-zinc-800">
                         LKR {classRev.revenue.toLocaleString()}
                       </TableCell>
                     </TableRow>

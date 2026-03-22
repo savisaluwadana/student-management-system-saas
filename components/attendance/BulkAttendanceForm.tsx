@@ -175,7 +175,7 @@ export function BulkAttendanceForm({ classes, institutes }: BulkAttendanceFormPr
                                     <Users className="h-5 w-5 text-muted-foreground" />
                                     <span className="font-medium">{students.length} Students</span>
                                 </div>
-                                <Badge variant="default" className="bg-green-500">{presentCount} Present</Badge>
+                                <Badge variant="default" className="bg-zinc-800">{presentCount} Present</Badge>
                                 <Badge variant="destructive">{absentCount} Absent</Badge>
                                 <Badge variant="secondary">{lateCount} Late</Badge>
                             </div>
@@ -230,7 +230,7 @@ export function BulkAttendanceForm({ classes, institutes }: BulkAttendanceFormPr
                                             <Button
                                                 size="sm"
                                                 variant={student.status === 'present' ? 'default' : 'outline'}
-                                                className={student.status === 'present' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                                className={student.status === 'present' ? 'bg-zinc-800 hover:bg-zinc-800' : ''}
                                                 onClick={() => toggleStudentStatus(student.student_id, 'present')}
                                             >
                                                 <CheckCircle2 className="h-4 w-4" />
@@ -238,7 +238,7 @@ export function BulkAttendanceForm({ classes, institutes }: BulkAttendanceFormPr
                                             <Button
                                                 size="sm"
                                                 variant={student.status === 'absent' ? 'default' : 'outline'}
-                                                className={student.status === 'absent' ? 'bg-red-500 hover:bg-red-600' : ''}
+                                                className={student.status === 'absent' ? 'bg-zinc-800 hover:bg-zinc-800' : ''}
                                                 onClick={() => toggleStudentStatus(student.student_id, 'absent')}
                                             >
                                                 <XCircle className="h-4 w-4" />
@@ -246,7 +246,7 @@ export function BulkAttendanceForm({ classes, institutes }: BulkAttendanceFormPr
                                             <Button
                                                 size="sm"
                                                 variant={student.status === 'late' ? 'default' : 'outline'}
-                                                className={student.status === 'late' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+                                                className={student.status === 'late' ? 'bg-zinc-800 hover:bg-zinc-800' : ''}
                                                 onClick={() => toggleStudentStatus(student.student_id, 'late')}
                                             >
                                                 <Clock className="h-4 w-4" />

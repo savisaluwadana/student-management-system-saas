@@ -16,11 +16,11 @@ export default async function CommunicationsPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'sent':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-zinc-800" />;
       case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-zinc-800" />;
       case 'failed':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-zinc-800" />;
       default:
         return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
     }
@@ -85,7 +85,7 @@ export default async function CommunicationsPage() {
                   communications.map((comm) => (
                     <div key={comm.id} className="flex gap-4 p-4 rounded-lg bg-white dark:bg-zinc-950 border border-border/50 hover:border-border transition-colors shadow-sm">
                       <div className="flex-shrink-0 mt-1">
-                        <div className={`p-2 rounded-full ${comm.channel === 'email' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
+                        <div className={`p-2 rounded-full ${comm.channel === 'email' ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900/30' : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900/30'}`}>
                           {comm.channel === 'email' ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
                         </div>
                       </div>

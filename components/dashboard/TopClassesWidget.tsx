@@ -18,7 +18,7 @@ interface TopClassesWidgetProps {
     classes: TopClass[];
 }
 
-const trophyColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
+const trophyColors = ['text-zinc-800', 'text-gray-400', 'text-zinc-800'];
 
 export function TopClassesWidget({ classes }: TopClassesWidgetProps) {
     if (classes.length === 0) {

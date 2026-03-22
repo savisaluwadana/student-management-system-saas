@@ -36,7 +36,7 @@ export default async function LandingPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Zap className="h-6 w-6 text-primary" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-zinc-800">
                 Academix
               </span>
             </div>
@@ -66,13 +66,13 @@ export default async function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent -z-10" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center px-4 py-1.5 rounded-full border bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse" />
+            <span className="flex h-2 w-2 rounded-full bg-zinc-800 mr-2 animate-pulse" />
             <span className="text-sm font-medium text-muted-foreground">v2.0 — Now with AI-powered insights</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
             Manage your institute <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-600 to-pink-600">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-zinc-800 to-zinc-800">
               with superpowers
             </span>
           </h1>
@@ -94,8 +94,8 @@ export default async function LandingPage() {
             </Link>
           </div>
         </div>
-        <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] -z-10" />
-        <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] -z-10" />
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[120px] -z-10" />
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[120px] -z-10" />
       </section>
 
       {/* Stats Section */}
@@ -202,7 +202,7 @@ export default async function LandingPage() {
       <section className="py-24 bg-white dark:bg-zinc-950">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary to-purple-600 rounded-3xl blur-3xl opacity-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-zinc-800 rounded-3xl blur-3xl opacity-10" />
             <div className="relative bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-12 md:p-16 text-white overflow-hidden">
               <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/20 rounded-full blur-[80px] translate-x-1/3 -translate-y-1/3" />
               <h2 className="text-3xl md:text-4xl font-bold mb-4 relative z-10">Ready to transform your institute?</h2>
@@ -230,7 +230,7 @@ export default async function LandingPage() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Zap className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+                <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-zinc-800">
                   Academix
                 </span>
               </div>
@@ -313,7 +313,7 @@ function PricingCard({ name, price, description, features, popular }: { name: st
       <CardContent className="space-y-3">
         {features.map((feature, i) => (
           <div key={i} className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-zinc-800 flex-shrink-0" />
             <span>{feature}</span>
           </div>
         ))}
@@ -333,14 +333,14 @@ function TestimonialCard({ quote, name, role }: { quote: string; name: string; r
       <CardContent className="pt-6">
         <div className="flex gap-1 mb-4">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <Star key={i} className="h-4 w-4 fill-zinc-300 text-zinc-300" />
           ))}
         </div>
         <blockquote className="text-muted-foreground mb-6 leading-relaxed italic">
           &ldquo;{quote}&rdquo;
         </blockquote>
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-zinc-800 flex items-center justify-center text-white font-bold text-sm">
             {name.split(' ').map(n => n[0]).join('')}
           </div>
           <div>

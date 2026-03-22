@@ -107,8 +107,8 @@ export function ReportsPageClient({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-500" />
+            <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+              <Users className="h-6 w-6 text-zinc-800" />
             </div>
             <div>
               <p className="text-2xl font-bold">{initialStats.totalStudents}</p>
@@ -118,8 +118,8 @@ export function ReportsPageClient({
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-500" />
+            <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-zinc-800" />
             </div>
             <div>
               <p className="text-2xl font-bold">{initialStats.totalClasses}</p>
@@ -129,8 +129,8 @@ export function ReportsPageClient({
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-indigo-500" />
+            <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+              <DollarSign className="h-6 w-6 text-zinc-800" />
             </div>
             <div>
               <p className="text-2xl font-bold">Finance</p>
@@ -140,8 +140,8 @@ export function ReportsPageClient({
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-orange-500" />
+            <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-zinc-800" />
             </div>
             <div>
               <p className="text-2xl font-bold">Attendance</p>
@@ -171,7 +171,7 @@ export function ReportsPageClient({
             <Card className="hover:shadow-lg transition-all duration-300">
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-indigo-400" />
+                  <DollarSign className="h-5 w-5 text-zinc-300" />
                   <h3 className="text-lg font-semibold">Financial Overview</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">Monthly revenue and pending payments</p>
@@ -189,7 +189,7 @@ export function ReportsPageClient({
             <Card className="hover:shadow-lg transition-all duration-300">
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-5 w-5 text-orange-400" />
+                  <Calendar className="h-5 w-5 text-zinc-300" />
                   <h3 className="text-lg font-semibold">Attendance Trends</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">Class-wise attendance statistics</p>
@@ -207,7 +207,7 @@ export function ReportsPageClient({
             <Card className="hover:shadow-lg transition-all duration-300">
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-5 w-5 text-blue-400" />
+                  <FileText className="h-5 w-5 text-zinc-300" />
                   <h3 className="text-lg font-semibold">Academic Highlights</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">Assessment and grade summaries</p>

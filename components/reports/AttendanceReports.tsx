@@ -31,8 +31,8 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
                   {overallStats.averageAttendanceRate.toFixed(1)}%
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-green-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <BarChart3 className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
             <Progress value={overallStats.averageAttendanceRate} className="mt-3" />
@@ -44,12 +44,12 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Present</p>
-                <p className="text-2xl font-bold mt-1 text-green-600">
+                <p className="text-2xl font-bold mt-1 text-zinc-800">
                   {overallStats.totalPresent.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-green-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -60,12 +60,12 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Absent</p>
-                <p className="text-2xl font-bold mt-1 text-red-600">
+                <p className="text-2xl font-bold mt-1 text-zinc-800">
                   {overallStats.totalAbsent.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <TrendingDown className="h-6 w-6 text-red-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <TrendingDown className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -76,12 +76,12 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Late Arrivals</p>
-                <p className="text-2xl font-bold mt-1 text-yellow-600">
+                <p className="text-2xl font-bold mt-1 text-zinc-800">
                   {overallStats.totalLate.toLocaleString()}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -108,9 +108,9 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium w-32">{date}</span>
                     <div className="flex items-center gap-6 text-xs">
-                      <span className="text-green-600">✓ {day.present}</span>
-                      <span className="text-red-600">✗ {day.absent}</span>
-                      <span className="text-yellow-600">⏰ {day.late}</span>
+                      <span className="text-zinc-800">✓ {day.present}</span>
+                      <span className="text-zinc-800">✗ {day.absent}</span>
+                      <span className="text-zinc-800">⏰ {day.late}</span>
                       <span className="font-bold w-16 text-right">{day.rate.toFixed(1)}%</span>
                     </div>
                   </div>
@@ -127,7 +127,7 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-500" />
+              <BarChart3 className="h-5 w-5 text-zinc-800" />
               Class-wise Comparison
             </CardTitle>
             <CardDescription>Attendance rates by class</CardDescription>
@@ -162,7 +162,7 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <AlertTriangle className="h-5 w-5 text-zinc-800" />
               At-Risk Students
             </CardTitle>
             <CardDescription>Students with low attendance (&lt;75%)</CardDescription>
@@ -170,7 +170,7 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
           <CardContent>
             {riskStudents.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-green-600 font-medium">All students have good attendance!</p>
+                <p className="text-zinc-800 font-medium">All students have good attendance!</p>
               </div>
             ) : (
               <Table>
@@ -195,9 +195,9 @@ export function AttendanceReportsContent({ data }: AttendanceReportsProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <span className={`font-bold ${
-                          student.attendance_rate < 50 ? 'text-red-600' :
-                          student.attendance_rate < 65 ? 'text-orange-600' :
-                          'text-yellow-600'
+                          student.attendance_rate < 50 ? 'text-zinc-800' :
+                          student.attendance_rate < 65 ? 'text-zinc-800' :
+                          'text-zinc-800'
                         }`}>
                           {student.attendance_rate.toFixed(1)}%
                         </span>

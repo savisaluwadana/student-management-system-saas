@@ -87,7 +87,7 @@ export function Navbar({ user }: { user?: any }) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 cursor-pointer">
+              <DropdownMenuItem onClick={handleLogout} className="text-zinc-800 focus:text-zinc-800 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

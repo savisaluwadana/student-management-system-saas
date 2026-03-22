@@ -270,7 +270,7 @@ export function CommunicationForm() {
                             )}
                         />
 
-                        <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300 hover:scale-[1.01]" disabled={isSubmitting}>
+                        <Button type="submit" className="w-full bg-gradient-to-r from-zinc-800 to-zinc-800 hover:from-zinc-900 hover:to-zinc-900 text-white shadow-lg transition-all duration-300 hover:scale-[1.01]" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

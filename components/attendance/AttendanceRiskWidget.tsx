@@ -12,14 +12,14 @@ export function AttendanceRiskWidget() {
     ];
 
     return (
-        <Card className="border-l-4 border-l-rose-500 shadow-md">
+        <Card className="border-l-4 border-l-zinc-900 shadow-md">
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-rose-500" />
+                        <AlertTriangle className="h-5 w-5 text-zinc-800" />
                         AI Risk Analysis
                     </CardTitle>
-                    <Badge variant="outline" className="animate-pulse bg-rose-50 text-rose-600 border-rose-200">
+                    <Badge variant="outline" className="animate-pulse bg-zinc-100 text-zinc-800 border-zinc-100">
                         Live Insights
                     </Badge>
                 </div>
@@ -36,7 +36,7 @@ export function AttendanceRiskWidget() {
                                 <p className="text-xs text-muted-foreground">{student.reason}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-rose-600 flex items-center">
+                                <span className="text-xs font-bold text-zinc-800 flex items-center">
                                     <TrendingDown className="h-3 w-3 mr-1" />
                                     {student.trend}%
                                 </span>

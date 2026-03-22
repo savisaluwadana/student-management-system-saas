@@ -182,9 +182,9 @@ export default function ImportStudentsPage() {
 
             {/* Parse Errors */}
             {parseErrors.length > 0 && (
-                <Card className="border-red-200 dark:border-red-900">
+                <Card className="border-zinc-100 dark:border-zinc-900">
                     <CardHeader>
-                        <CardTitle className="text-red-600 flex items-center gap-2">
+                        <CardTitle className="text-zinc-800 flex items-center gap-2">
                             <AlertCircle className="h-5 w-5" />
                             Parse Errors
                         </CardTitle>
@@ -192,7 +192,7 @@ export default function ImportStudentsPage() {
                     <CardContent>
                         <ul className="list-disc list-inside space-y-1">
                             {parseErrors.map((error, i) => (
-                                <li key={i} className="text-sm text-red-600">
+                                <li key={i} className="text-sm text-zinc-800">
                                     Row {error.row}: {error.message}
                                 </li>
                             ))}
@@ -208,11 +208,11 @@ export default function ImportStudentsPage() {
                         <CardTitle>Step 3: Review Data</CardTitle>
                         <CardDescription className="flex items-center gap-4">
                             <span className="flex items-center gap-1">
-                                <Check className="h-4 w-4 text-green-600" />
+                                <Check className="h-4 w-4 text-zinc-800" />
                                 Valid: {validCount}
                             </span>
                             <span className="flex items-center gap-1">
-                                <X className="h-4 w-4 text-red-600" />
+                                <X className="h-4 w-4 text-zinc-800" />
                                 Invalid: {invalidCount}
                             </span>
                         </CardDescription>
@@ -233,7 +233,7 @@ export default function ImportStudentsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {parsedData.slice(0, 50).map((student, i) => (
-                                        <TableRow key={i} className={!student._valid ? 'bg-red-50 dark:bg-red-950/20' : ''}>
+                                        <TableRow key={i} className={!student._valid ? 'bg-zinc-100 dark:bg-zinc-900/20' : ''}>
                                             <TableCell>
                                                 {student._valid ? (
                                                     <Badge variant="default">Valid</Badge>
@@ -246,7 +246,7 @@ export default function ImportStudentsPage() {
                                             <TableCell>{student.email || '-'}</TableCell>
                                             <TableCell>{student.phone || '-'}</TableCell>
                                             <TableCell>{student.guardian_name || '-'}</TableCell>
-                                            <TableCell className="text-red-600 text-sm">
+                                            <TableCell className="text-zinc-800 text-sm">
                                                 {student._errors.join(', ')}
                                             </TableCell>
                                         </TableRow>
@@ -265,11 +265,11 @@ export default function ImportStudentsPage() {
 
             {/* Import Result */}
             {importResult && (
-                <Card className={importResult.success ? 'border-green-200 dark:border-green-900' : 'border-red-200 dark:border-red-900'}>
+                <Card className={importResult.success ? 'border-zinc-100 dark:border-zinc-900' : 'border-zinc-100 dark:border-zinc-900'}>
                     <CardContent className="pt-6">
                         {importResult.success ? (
                             <div className="text-center">
-                                <Check className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                                <Check className="h-12 w-12 text-zinc-800 mx-auto mb-2" />
                                 <p className="text-lg font-semibold">Import Successful!</p>
                                 <p className="text-muted-foreground">
                                     Imported {importResult.imported} students. Redirecting...
@@ -277,10 +277,10 @@ export default function ImportStudentsPage() {
                             </div>
                         ) : (
                             <div>
-                                <p className="text-red-600 font-semibold mb-2">Import Failed</p>
+                                <p className="text-zinc-800 font-semibold mb-2">Import Failed</p>
                                 <p>Imported: {importResult.imported}, Failed: {importResult.failed}</p>
                                 {importResult.errors.length > 0 && (
-                                    <ul className="list-disc list-inside mt-2 text-sm text-red-600">
+                                    <ul className="list-disc list-inside mt-2 text-sm text-zinc-800">
                                         {importResult.errors.slice(0, 10).map((error, i) => (
                                             <li key={i}>{error}</li>
                                         ))}

@@ -57,13 +57,13 @@ export default async function TutorialStatusPage() {
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4 pt-2">
-                                    <div className="text-center p-3 bg-green-500/10 rounded-lg">
-                                        <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto mb-1" />
+                                    <div className="text-center p-3 bg-zinc-800/10 rounded-lg">
+                                        <CheckCircle2 className="h-5 w-5 text-zinc-800 mx-auto mb-1" />
                                         <p className="text-lg font-bold">{item.completed_count}</p>
                                         <p className="text-xs text-muted-foreground">Completed</p>
                                     </div>
-                                    <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
-                                        <Clock className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
+                                    <div className="text-center p-3 bg-zinc-800/10 rounded-lg">
+                                        <Clock className="h-5 w-5 text-zinc-800 mx-auto mb-1" />
                                         <p className="text-lg font-bold">{item.in_progress_count}</p>
                                         <p className="text-xs text-muted-foreground">In Progress</p>
                                     </div>

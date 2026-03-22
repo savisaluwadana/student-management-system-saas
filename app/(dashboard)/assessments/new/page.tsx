@@ -189,7 +189,7 @@ function NewAssessmentForm() {
                         </div>
 
                         {error && (
-                            <p className="text-sm text-red-500">{error}</p>
+                            <p className="text-sm text-zinc-800">{error}</p>
                         )}
 
                         <div className="flex justify-end gap-4">

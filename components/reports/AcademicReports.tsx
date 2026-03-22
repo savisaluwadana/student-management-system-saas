@@ -31,8 +31,8 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
                   {assessmentStats.averageScore.toFixed(1)}%
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-blue-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
             <Progress value={assessmentStats.averageScore} className="mt-3" />
@@ -48,8 +48,8 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
                   {assessmentStats.totalAssessments}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                <FileText className="h-6 w-6 text-indigo-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -60,12 +60,12 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
-                <p className="text-2xl font-bold mt-1 text-green-600">
+                <p className="text-2xl font-bold mt-1 text-zinc-800">
                   {assessmentStats.highestScore.toFixed(1)}%
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <Award className="h-6 w-6 text-green-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <Award className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -80,8 +80,8 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
                   {assessmentStats.totalGrades}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-500" />
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-zinc-800" />
               </div>
             </div>
           </CardContent>
@@ -98,11 +98,11 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
           <div className="space-y-4">
             {gradeDistribution.map((grade) => {
               const gradeColors: Record<string, string> = {
-                'A (90-100)': 'bg-green-500',
-                'B (80-89)': 'bg-blue-500',
-                'C (70-79)': 'bg-yellow-500',
-                'D (60-69)': 'bg-orange-500',
-                'F (0-59)': 'bg-red-500'
+                'A (90-100)': 'bg-zinc-800',
+                'B (80-89)': 'bg-zinc-800',
+                'C (70-79)': 'bg-zinc-800',
+                'D (60-69)': 'bg-zinc-800',
+                'F (0-59)': 'bg-zinc-800'
               };
 
               return (
@@ -132,7 +132,7 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-yellow-500" />
+              <Award className="h-5 w-5 text-zinc-800" />
               Top Performers
             </CardTitle>
             <CardDescription>Students with highest average scores</CardDescription>
@@ -157,9 +157,9 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
                     <TableRow key={student.student_id}>
                       <TableCell>
                         <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                          index === 0 ? 'bg-yellow-500/20 text-yellow-700' :
+                          index === 0 ? 'bg-zinc-800/20 text-zinc-900' :
                           index === 1 ? 'bg-gray-400/20 text-gray-700' :
-                          index === 2 ? 'bg-orange-500/20 text-orange-700' :
+                          index === 2 ? 'bg-zinc-800/20 text-zinc-900' :
                           'bg-muted text-muted-foreground'
                         }`}>
                           {index + 1}
@@ -172,7 +172,7 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="font-bold text-green-600">
+                        <span className="font-bold text-zinc-800">
                           {student.average_score.toFixed(1)}%
                         </span>
                       </TableCell>
@@ -191,7 +191,7 @@ export function AcademicReportsContent({ data }: AcademicReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-500" />
+              <TrendingUp className="h-5 w-5 text-zinc-800" />
               Class Performance
             </CardTitle>
             <CardDescription>Average scores by class</CardDescription>

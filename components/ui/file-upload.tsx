@@ -88,7 +88,7 @@ export function FileUpload({
                     className={`
             relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
             ${dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
-            ${error ? 'border-red-500 bg-red-50 dark:bg-red-950/10' : ''}
+            ${error ? 'border-zinc-800 bg-zinc-100 dark:bg-zinc-900/10' : ''}
           `}
                 >
                     <input
@@ -124,7 +124,7 @@ export function FileUpload({
             )}
 
             {error && (
-                <p className="text-sm text-red-500 mt-2">{error}</p>
+                <p className="text-sm text-zinc-800 mt-2">{error}</p>
             )}
         </div>
     );

@@ -70,7 +70,7 @@ export function AssessmentActions({ id }: AssessmentActionsProps) {
             </Link>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
+                    <Button size="sm" variant="ghost" className="text-zinc-800 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </AlertDialogTrigger>
@@ -84,7 +84,7 @@ export function AssessmentActions({ id }: AssessmentActionsProps) {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-500 hover:bg-red-600">
+                        <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-zinc-800 hover:bg-zinc-800">
                             {isDeleting ? "Deleting..." : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>

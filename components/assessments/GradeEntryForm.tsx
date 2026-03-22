@@ -154,8 +154,8 @@ export function GradeEntryForm({ assessment, students }: GradeEntryFormProps) {
             {message && (
                 <div
                     className={`p-3 rounded-lg ${message.type === 'success'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-100'
-                        : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-100'
+                        ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
+                        : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
                         }`}
                 >
                     {message.text}

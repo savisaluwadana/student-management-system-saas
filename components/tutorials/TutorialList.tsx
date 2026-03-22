@@ -46,9 +46,9 @@ const contentTypeIcons: Record<string, typeof Video> = {
 };
 
 const contentTypeColors: Record<string, string> = {
-    video: 'text-red-500 bg-red-500/10',
-    document: 'text-blue-500 bg-blue-500/10',
-    link: 'text-green-500 bg-green-500/10',
+    video: 'text-zinc-800 bg-zinc-800/10',
+    document: 'text-zinc-800 bg-zinc-800/10',
+    link: 'text-zinc-800 bg-zinc-800/10',
     other: 'text-gray-500 bg-gray-500/10',
 };
 
@@ -165,7 +165,7 @@ export function TutorialList({ tutorials }: TutorialListProps) {
                                             </Badge>
                                         )}
                                         {tutorial.is_public && (
-                                            <Badge variant="default" className="bg-green-500">
+                                            <Badge variant="default" className="bg-zinc-800">
                                                 Public
                                             </Badge>
                                         )}

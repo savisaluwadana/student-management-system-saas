@@ -38,17 +38,17 @@ export function OverduePaymentBanner({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
             >
-                <Card className="bg-gradient-to-r from-red-500/10 via-orange-500/10 to-yellow-500/10 border-red-500/20">
+                <Card className="bg-gradient-to-r from-zinc-800/10 via-zinc-800/10 to-zinc-800/10 border-zinc-800/20">
                     <CardContent className="py-4">
                         <div className="flex items-start gap-4">
-                            <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                                <AlertTriangle className="h-5 w-5 text-red-500" />
+                            <div className="h-10 w-10 rounded-full bg-zinc-800/20 flex items-center justify-center flex-shrink-0">
+                                <AlertTriangle className="h-5 w-5 text-zinc-800" />
                             </div>
 
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-red-600 dark:text-red-400">
+                                        <h3 className="font-semibold text-zinc-800 dark:text-zinc-300">
                                             Overdue Payments Alert
                                         </h3>
                                         <p className="text-sm text-muted-foreground mt-1">
@@ -108,7 +108,7 @@ export function OverduePaymentBanner({
                                                             ({payment.days_overdue} days overdue)
                                                         </span>
                                                     </div>
-                                                    <span className="font-semibold text-red-600 dark:text-red-400">
+                                                    <span className="font-semibold text-zinc-800 dark:text-zinc-300">
                                                         ${payment.amount.toLocaleString()}
                                                     </span>
                                                 </div>

@@ -155,10 +155,10 @@ export default async function AttendanceReportsPage({
                                             <TableCell>
                                                 <span
                                                     className={`font-semibold ${record.attendance_percentage >= 80
-                                                            ? 'text-green-600'
+                                                            ? 'text-zinc-800'
                                                             : record.attendance_percentage >= 60
-                                                                ? 'text-yellow-600'
-                                                                : 'text-red-600'
+                                                                ? 'text-zinc-800'
+                                                                : 'text-zinc-800'
                                                         }`}
                                                 >
                                                     {record.attendance_percentage}%

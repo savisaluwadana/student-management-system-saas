@@ -16,6 +16,9 @@ export interface ActivityLogType {
   user?: { full_name: string; email: string; avatar_url?: string };
 }
 
+// Backward-compatibility alias
+export type ActivityLog = ActivityLogType;
+
 export async function getActivityLogs(limit = 50): Promise<ActivityLogType[]> {
   await connectDB();
 

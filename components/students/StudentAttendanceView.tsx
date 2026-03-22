@@ -21,10 +21,10 @@ interface StudentAttendanceViewProps {
 }
 
 const statusConfig = {
-    present: { label: 'Present', icon: Check, color: 'bg-emerald-100 text-emerald-700' },
-    absent: { label: 'Absent', icon: X, color: 'bg-rose-100 text-rose-700' },
-    late: { label: 'Late', icon: Clock, color: 'bg-amber-100 text-amber-700' },
-    excused: { label: 'Excused', icon: AlertCircle, color: 'bg-blue-100 text-blue-700' },
+    present: { label: 'Present', icon: Check, color: 'bg-zinc-100 text-zinc-900' },
+    absent: { label: 'Absent', icon: X, color: 'bg-zinc-100 text-zinc-900' },
+    late: { label: 'Late', icon: Clock, color: 'bg-zinc-100 text-zinc-900' },
+    excused: { label: 'Excused', icon: AlertCircle, color: 'bg-zinc-100 text-zinc-900' },
 };
 
 export function StudentAttendanceView({ history }: StudentAttendanceViewProps) {
@@ -39,7 +39,7 @@ export function StudentAttendanceView({ history }: StudentAttendanceViewProps) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
-                        <Check className="h-4 w-4 text-emerald-500" />
+                        <Check className="h-4 w-4 text-zinc-800" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{rate}%</div>

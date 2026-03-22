@@ -84,7 +84,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={DollarSign}
                     value={formatCurrency(data.totalRevenue)}
                     subtext="All time revenue"
-                    color="text-green-500"
+                    color="text-zinc-800"
                     delay={0.1}
                 />
                 <StatsCard
@@ -92,7 +92,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={Users}
                     value={data.totalStudents.toString()}
                     subtext="Currently enrolled"
-                    color="text-blue-500"
+                    color="text-zinc-800"
                     delay={0.15}
                 />
                 <StatsCard
@@ -100,7 +100,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={GraduationCap}
                     value={data.activeClasses.toString()}
                     subtext="Running classes"
-                    color="text-purple-500"
+                    color="text-zinc-800"
                     delay={0.2}
                 />
                 <StatsCard
@@ -108,7 +108,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={Activity}
                     value={data.totalTeachers.toString()}
                     subtext="Teaching staff"
-                    color="text-orange-500"
+                    color="text-zinc-800"
                     delay={0.25}
                 />
                 <StatsCard
@@ -116,7 +116,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={Video}
                     value={data.totalTutorials.toString()}
                     subtext="Learning materials"
-                    color="text-pink-500"
+                    color="text-zinc-800"
                     delay={0.3}
                 />
                 <StatsCard
@@ -124,7 +124,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
                     icon={CheckCircle2}
                     value={`${data.attendanceRate}%`}
                     subtext="30-day average"
-                    color={data.attendanceRate >= 80 ? "text-green-500" : data.attendanceRate >= 60 ? "text-yellow-500" : "text-red-500"}
+                    color={data.attendanceRate >= 80 ? "text-zinc-800" : data.attendanceRate >= 60 ? "text-zinc-800" : "text-zinc-800"}
                     delay={0.35}
                 />
             </div>

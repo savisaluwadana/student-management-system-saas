@@ -19,8 +19,8 @@ export default function AuthLayout({
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         {/* Decorative orbs */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500/15 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
-        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-zinc-800/15 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-zinc-800/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
@@ -39,7 +39,7 @@ export default function AuthLayout({
             <div>
               <h2 className="text-4xl font-extrabold text-white leading-tight">
                 Manage your institute <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-pink-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-zinc-300 to-zinc-300">
                   with superpowers
                 </span>
               </h2>

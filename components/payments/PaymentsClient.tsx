@@ -87,7 +87,7 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                 <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-emerald-500" /> Total Revenue
+                            <DollarSign className="h-4 w-4 text-zinc-800" /> Total Revenue
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -97,7 +97,7 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                 <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-yellow-500" /> Pending
+                            <Clock className="h-4 w-4 text-zinc-800" /> Pending
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -107,7 +107,7 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                 <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" /> Paid
+                            <CheckCircle2 className="h-4 w-4 text-zinc-800" /> Paid
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -117,7 +117,7 @@ export function PaymentsClient({ payments, stats }: PaymentsClientProps) {
                 <Card className="hover:shadow-lg transition-shadow duration-300 border-none bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-red-500" /> Overdue
+                            <AlertTriangle className="h-4 w-4 text-zinc-800" /> Overdue
                         </CardTitle>
                     </CardHeader>
                     <CardContent>

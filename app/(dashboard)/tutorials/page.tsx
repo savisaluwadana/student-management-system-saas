@@ -45,8 +45,8 @@ export default async function TutorialsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <Video className="h-6 w-6 text-blue-500" />
+                        <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                            <Video className="h-6 w-6 text-zinc-800" />
                         </div>
                         <div>
                             <p className="text-2xl font-bold">{stats.total}</p>
@@ -56,8 +56,8 @@ export default async function TutorialsPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                            <BookOpen className="h-6 w-6 text-green-500" />
+                        <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-zinc-800" />
                         </div>
                         <div>
                             <p className="text-2xl font-bold">{classes.length}</p>
@@ -67,8 +67,8 @@ export default async function TutorialsPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                            <FileText className="h-6 w-6 text-purple-500" />
+                        <div className="h-12 w-12 rounded-xl bg-zinc-800/10 flex items-center justify-center">
+                            <FileText className="h-6 w-6 text-zinc-800" />
                         </div>
                         <div>
                             <p className="text-2xl font-bold">{tutorials.filter(t => t.content_type === 'video').length}</p>

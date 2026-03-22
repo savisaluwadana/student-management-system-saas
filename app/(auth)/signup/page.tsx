@@ -74,7 +74,7 @@ export default function SignupPage() {
       <div className="space-y-2">
         {benefits.map((benefit, i) => (
           <div key={i} className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-zinc-800 flex-shrink-0" />
             <span className="text-muted-foreground">{benefit}</span>
           </div>
         ))}

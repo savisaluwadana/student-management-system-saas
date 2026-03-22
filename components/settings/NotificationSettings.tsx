@@ -135,7 +135,7 @@ export function NotificationSettings() {
                     <div className="flex items-center justify-between space-x-2">
                         <div className="flex flex-col space-y-1">
                             <Label className="text-base flex items-center gap-2">
-                                <Smartphone className="h-4 w-4 text-green-600" /> WhatsApp Notifications
+                                <Smartphone className="h-4 w-4 text-zinc-800" /> WhatsApp Notifications
                             </Label>
                             <span className="text-sm text-muted-foreground">
                                 Receive WhatsApp messages for selected events

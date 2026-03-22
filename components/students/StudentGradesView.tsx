@@ -75,9 +75,9 @@ export function StudentGradesView({ grades }: StudentGradesViewProps) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-muted-foreground">Class Average</p>
-                                    <p className={`text-2xl font-bold ${averagePercentage >= 75 ? 'text-green-600' :
-                                            averagePercentage >= 50 ? 'text-yellow-600' :
-                                                'text-red-600'
+                                    <p className={`text-2xl font-bold ${averagePercentage >= 75 ? 'text-zinc-800' :
+                                            averagePercentage >= 50 ? 'text-zinc-800' :
+                                                'text-zinc-800'
                                         }`}>
                                         {averagePercentage.toFixed(1)}%
                                     </p>
@@ -125,8 +125,8 @@ export function StudentGradesView({ grades }: StudentGradesViewProps) {
                                                             grade.percentage >= 50 ? 'secondary' :
                                                                 'destructive'
                                                     } className={
-                                                        grade.percentage >= 75 ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200' :
-                                                            grade.percentage >= 50 ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200' :
+                                                        grade.percentage >= 75 ? 'bg-zinc-100 text-zinc-900 hover:bg-zinc-100 border-zinc-100' :
+                                                            grade.percentage >= 50 ? 'bg-zinc-100 text-zinc-900 hover:bg-zinc-100 border-zinc-100' :
                                                                 ''
                                                     }>
                                                         {grade.percentage}%

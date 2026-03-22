@@ -85,7 +85,7 @@ export default function EditAssessmentPage({ params }: { params: { id: string } 
     }
 
     if (!assessment) {
-        return <div className="p-8 text-center text-red-500">Assessment not found.</div>;
+        return <div className="p-8 text-center text-zinc-800">Assessment not found.</div>;
     }
 
     return (
@@ -195,7 +195,7 @@ export default function EditAssessmentPage({ params }: { params: { id: string } 
                         </div>
 
                         {error && (
-                            <p className="text-sm text-red-500">{error}</p>
+                            <p className="text-sm text-zinc-800">{error}</p>
                         )}
 
                         <div className="flex justify-end gap-4">

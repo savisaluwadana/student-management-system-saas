@@ -320,8 +320,8 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
             </div>
 
             {/* Scanner Input */}
-            <Card className={`transition-all duration-300 ${visualFeedback && lastStatus === 'success' ? 'ring-4 ring-green-500/50 bg-green-500/5' :
-                visualFeedback && lastStatus === 'error' ? 'ring-4 ring-red-500/50 bg-red-500/5' : ''
+            <Card className={`transition-all duration-300 ${visualFeedback && lastStatus === 'success' ? 'ring-4 ring-zinc-800/50 bg-zinc-800/5' :
+                visualFeedback && lastStatus === 'error' ? 'ring-4 ring-zinc-800/50 bg-zinc-800/5' : ''
                 }`}>
                 <CardContent className="py-8">
                     {scanMode === 'keyboard' ? (
@@ -353,7 +353,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                             </div>
 
                             {!selectedClass && (
-                                <p className="text-sm text-yellow-600">Please select a class before scanning</p>
+                                <p className="text-sm text-zinc-800">Please select a class before scanning</p>
                             )}
                         </div>
                     ) : (
@@ -391,7 +391,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                             </div>
 
                             {cameraError && (
-                                <div className="text-red-500 text-sm flex items-center justify-center gap-2">
+                                <div className="text-zinc-800 text-sm flex items-center justify-center gap-2">
                                     <XCircle className="h-4 w-4" />
                                     {cameraError}
                                 </div>
@@ -422,7 +422,7 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                             )}
 
                             {!selectedClass && (
-                                <p className="text-sm text-yellow-600">Please select a class before scanning</p>
+                                <p className="text-sm text-zinc-800">Please select a class before scanning</p>
                             )}
                         </div>
                     )}
@@ -440,13 +440,13 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                     </Card>
                     <Card>
                         <CardContent className="py-4 text-center">
-                            <p className="text-3xl font-bold text-green-500">{successCount}</p>
+                            <p className="text-3xl font-bold text-zinc-800">{successCount}</p>
                             <p className="text-sm text-muted-foreground">Successful</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="py-4 text-center">
-                            <p className="text-3xl font-bold text-red-500">{errorCount}</p>
+                            <p className="text-3xl font-bold text-zinc-800">{errorCount}</p>
                             <p className="text-sm text-muted-foreground">Failed</p>
                         </CardContent>
                     </Card>
@@ -469,16 +469,16 @@ export function ScanAttendance({ classes, institutes }: ScanAttendanceProps) {
                                             key={result.id}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            className={`flex items-center justify-between p-4 ${result.success ? 'bg-green-500/5' : 'bg-red-500/5'
+                                            className={`flex items-center justify-between p-4 ${result.success ? 'bg-zinc-800/5' : 'bg-zinc-800/5'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${result.success ? 'bg-green-500/20' : 'bg-red-500/20'
+                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${result.success ? 'bg-zinc-800/20' : 'bg-zinc-800/20'
                                                     }`}>
                                                     {result.success ? (
-                                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                        <CheckCircle2 className="h-5 w-5 text-zinc-800" />
                                                     ) : (
-                                                        <XCircle className="h-5 w-5 text-red-500" />
+                                                        <XCircle className="h-5 w-5 text-zinc-800" />
                                                     )}
                                                 </div>
                                                 <div>

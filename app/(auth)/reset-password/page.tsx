@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
       </CardHeader>
       {sent ? (
         <CardContent className="space-y-4">
-          <p className="text-sm text-green-600 font-medium">✓ Reset link sent! Check your inbox.</p>
+          <p className="text-sm text-zinc-800 font-medium">✓ Reset link sent! Check your inbox.</p>
           <Link href="/login" className="text-primary hover:underline text-sm">← Return to login</Link>
         </CardContent>
       ) : (

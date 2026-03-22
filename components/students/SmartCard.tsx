@@ -217,7 +217,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
     <Card className="overflow-hidden">
       <div
         id={cardId}
-        className="relative w-full aspect-[1.586/1] max-w-[340px] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-5 text-white"
+        className="relative w-full aspect-[1.586/1] max-w-[340px] bg-gradient-to-br from-zinc-800 via-zinc-800 to-zinc-800 rounded-xl p-5 text-white"
       >
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -237,7 +237,7 @@ export function SmartCard({ student, instituteName, instituteCode }: SmartCardPr
         {/* Content */}
         <div className="relative z-10 flex gap-4">
           {/* Photo placeholder */}
-          <div className="w-16 h-20 bg-white rounded-lg flex items-center justify-center text-2xl font-bold text-indigo-500 shadow-lg">
+          <div className="w-16 h-20 bg-white rounded-lg flex items-center justify-center text-2xl font-bold text-zinc-800 shadow-lg">
             {student.full_name.charAt(0)}
           </div>
 
