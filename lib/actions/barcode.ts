@@ -3,83 +3,95 @@
 import { revalidatePath } from 'next/cache';
 import connectDB from '@/lib/mongodb/client';
 import Student from '@/lib/mongodb/models/Student';
-import Enrollment from '@/lib/mongodb/models/Enrollment';
 import mongoose from 'mongoose';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
-export async function generateStudentBarcode(
-  studentId: string
-): Promise<{ success: boolean; barcode?: string; error?: string }> {
-  await connectDB();
-  if (!mongoose.isValidObjectId(studentId)) return { success: false, error: 'Invalid ID' };
-
-  const student = await Student.findById(studentId).select('barcode student_code').lean();
-  if (!student) return { success: false, error: 'Student not found' };
-
-  const s = student as any;
-  if (s.barcode) return { success: true, barcode: s.barcode };
-
-  const year = new Date().getFullYear().toString().slice(-2);
-  const random = Math.floor(100000 + Math.random() * 900000).toString();
-  const barcode = `STU${year}${random}`;
-
-  await Student.findByIdAndUpdate(studentId, { barcode });
-  revalidatePath('/students');
-  revalidatePath(`/students/${studentId}`);
-  return { success: true, barcode };
+function generateBarcodeValue(studentCode: string) {
+  const suffix = Math.floor(100000 + Math.random() * 900000).toString();
+  return `${studentCode}-${suffix}`;
 }
 
-export async function generateBulkBarcodes(): Promise<{ success: boolean; count?: number; error?: string }> {
+export async function getStudentsWithoutBarcode() {
   await connectDB();
+  const context = await requireWorkspaceContext();
+  const students = await Student.find(workspaceFilter(context, {
+    $or: [{ barcode: { $exists: false } }, { barcode: null }, { barcode: '' }],
+  }))
+    .sort({ student_code: 1 })
+    .select('student_code full_name barcode')
+    .lean({ virtuals: true });
 
-  const students = await Student.find({ $or: [{ barcode: { $exists: false } }, { barcode: null }, { barcode: '' }] }).select('_id').lean();
-  if (!students.length) return { success: true, count: 0 };
+  return (students as any[]).map((student) => ({
+    id: student._id.toString(),
+    student_code: student.student_code,
+    full_name: student.full_name,
+    barcode: student.barcode || null,
+  }));
+}
 
-  const year = new Date().getFullYear().toString().slice(-2);
-  for (const student of students as any[]) {
-    const random = Math.floor(100000 + Math.random() * 900000).toString();
-    await Student.findByIdAndUpdate(student._id, { barcode: `STU${year}${random}` });
+export async function generateStudentBarcode(studentId: string) {
+  await connectDB();
+  const context = await requireWorkspaceContext();
+  if (!mongoose.isValidObjectId(studentId)) return { success: false, error: 'Invalid student.' };
+
+  const student = await Student.findOne(workspaceFilter(context, { _id: studentId }));
+  if (!student) return { success: false, error: 'Student not found.' };
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const barcode = generateBarcodeValue(student.student_code);
+    const exists = await Student.exists(workspaceFilter(context, { barcode }));
+    if (exists) continue;
+
+    student.barcode = barcode;
+    await student.save();
+    revalidatePath('/students');
+    revalidatePath('/students/barcodes');
+    return { success: true, barcode };
+  }
+
+  return { success: false, error: 'Could not generate a unique barcode. Please try again.' };
+}
+
+export async function regenerateStudentBarcode(studentId: string) {
+  return generateStudentBarcode(studentId);
+}
+
+export async function generateMissingBarcodes() {
+  await connectDB();
+  const context = await requireWorkspaceContext({ admin: true });
+  const students = await Student.find(workspaceFilter(context, {
+    $or: [{ barcode: { $exists: false } }, { barcode: null }, { barcode: '' }],
+  }));
+
+  let updated = 0;
+  for (const student of students) {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const barcode = generateBarcodeValue(student.student_code);
+      const exists = await Student.exists(workspaceFilter(context, { barcode }));
+      if (exists) continue;
+      student.barcode = barcode;
+      await student.save();
+      updated += 1;
+      break;
+    }
   }
 
   revalidatePath('/students');
-  return { success: true, count: students.length };
+  revalidatePath('/students/barcodes');
+  return { success: true, count: updated };
 }
 
-export async function getStudentByBarcode(barcode: string): Promise<{ success: boolean; student?: any; error?: string }> {
+export async function findStudentByBarcode(barcode: string) {
   await connectDB();
+  const context = await requireWorkspaceContext();
+  const value = barcode.trim();
+  if (!value) return null;
 
-  const student = await Student.findOne({ $or: [{ barcode }, { student_code: barcode }] }).lean({ virtuals: true });
-  if (!student) return { success: false, error: 'Student not found' };
+  const student = await Student.findOne(workspaceFilter(context, {
+    $or: [{ barcode: value }, { student_code: value }],
+  })).lean({ virtuals: true });
+  if (!student) return null;
 
-  const s = student as any;
-  const enrollments = await Enrollment.find({ student_id: s._id })
-    .populate('class_id', 'id class_name class_code')
-    .lean({ virtuals: true });
-
-  return {
-    success: true,
-    student: {
-      ...s,
-      id: s._id.toString(),
-      enrollments: (enrollments as any[]).map((e) => ({
-        id: e._id.toString(),
-        status: e.status,
-        classes: { id: e.class_id?._id?.toString(), class_name: e.class_id?.class_name, class_code: e.class_id?.class_code },
-      })),
-    },
-  };
-}
-
-export async function searchStudents(query: string, limit = 10): Promise<any[]> {
-  await connectDB();
-
-  const regex = new RegExp(query, 'i');
-  const students = await Student.find({
-    status: 'active',
-    $or: [{ barcode: regex }, { student_code: regex }, { full_name: regex }],
-  })
-    .select('id student_code full_name barcode email status')
-    .limit(limit)
-    .lean({ virtuals: true });
-
-  return (students as any[]).map((s) => ({ ...s, id: s._id.toString() }));
+  const data = student as any;
+  return { ...data, id: data._id.toString() };
 }
