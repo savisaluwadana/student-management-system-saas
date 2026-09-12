@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IEnrollment extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
   class_id: mongoose.Types.ObjectId;
   status: 'active' | 'inactive' | 'completed' | 'dropped';
@@ -13,6 +14,7 @@ export interface IEnrollment extends Document {
 
 const EnrollmentSchema = new Schema<IEnrollment>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     student_id: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
     class_id: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
     status: { type: String, enum: ['active', 'inactive', 'completed', 'dropped'], default: 'active' },
@@ -30,7 +32,6 @@ EnrollmentSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 
-// Compound index for uniqueness
 EnrollmentSchema.index({ student_id: 1, class_id: 1 }, { unique: true });
 
 const Enrollment: Model<IEnrollment> = mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);
