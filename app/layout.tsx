@@ -8,8 +8,13 @@ import { CommandMenu } from "@/components/ui/command-menu";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Student Management System",
-  description: "A comprehensive student management system built with Next.js 14, TypeScript, and Supabase",
+  title: {
+    default: "Academix — Education Operations OS",
+    template: "%s · Academix",
+  },
+  description: "Run student records, classes, attendance, assessments, fee collections, communications and reporting from one education operations workspace.",
+  applicationName: "Academix",
+  keywords: ["student management", "education SaaS", "attendance", "tuition management", "institute management"],
 };
 
 export default function RootLayout({
@@ -20,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} font-sans antialiased`}>
-        <ThemeProvider defaultTheme="light" storageKey="sms-theme">
+        <ThemeProvider defaultTheme="light" storageKey="academix-theme">
           <CommandMenu />
           {children}
           <Toaster />
