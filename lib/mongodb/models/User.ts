@@ -10,6 +10,7 @@ export interface IUser extends Document {
   role: 'admin' | 'teacher';
   workspace_id?: mongoose.Types.ObjectId;
   avatar_url?: string;
+  auth_version: number;
   created_at: Date;
   updated_at: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -24,6 +25,7 @@ const UserSchema = new Schema<IUser>(
     role: { type: String, enum: ['admin', 'teacher'], default: 'admin' },
     workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     avatar_url: { type: String },
+    auth_version: { type: Number, default: 0, min: 0 },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
