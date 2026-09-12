@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
@@ -10,25 +11,30 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser();
 
-  // Transform JWT payload to match the shape expected by Navbar/Sidebar
-  const userForLayout = user
-    ? {
-        id: user.id,
-        email: user.email,
-        user_metadata: { full_name: user.full_name, role: user.role },
-      }
-    : null;
+  // Middleware is intentionally lightweight. The server layout is the source of
+  // truth for protected application routes and verifies the signed JWT.
+  if (!user) {
+    redirect('/login');
+  }
+
+  const userForLayout = {
+    id: user.id,
+    email: user.email,
+    user_metadata: { full_name: user.full_name, role: user.role },
+  };
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar user={userForLayout} />
-      <div className="flex-1 flex overflow-hidden">
-        <div className="hidden md:flex h-full">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden h-full md:flex">
           <Sidebar user={userForLayout} />
-        </div>
-        <main className="flex-1 overflow-y-auto bg-muted/50 p-6">
-          <Breadcrumbs />
-          {children}
+        </aside>
+        <main className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.06),transparent_30%),linear-gradient(to_bottom,hsl(var(--background)),hsl(var(--muted)/0.35))]">
+          <div className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8">
+            <Breadcrumbs />
+            {children}
+          </div>
         </main>
       </div>
     </div>
