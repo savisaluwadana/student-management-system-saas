@@ -2,6 +2,7 @@
 
 import connectDB from '@/lib/mongodb/client';
 import ActivityLog from '@/lib/mongodb/models/ActivityLog';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
 export interface ActivityLogType {
   id: string;
@@ -16,15 +17,16 @@ export interface ActivityLogType {
   user?: { full_name: string; email: string; avatar_url?: string };
 }
 
-// Backward-compatibility alias
 export type ActivityLog = ActivityLogType;
 
 export async function getActivityLogs(limit = 50): Promise<ActivityLogType[]> {
   await connectDB();
+  const context = await requireWorkspaceContext({ admin: true });
 
-  const logs = await ActivityLog.find({})
+  const safeLimit = Math.max(1, Math.min(limit, 200));
+  const logs = await ActivityLog.find(workspaceFilter(context, {}))
     .sort({ created_at: -1 })
-    .limit(limit)
+    .limit(safeLimit)
     .populate('user_id', 'full_name email avatar_url')
     .lean({ virtuals: true });
 
