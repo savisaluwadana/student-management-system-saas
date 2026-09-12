@@ -9,6 +9,7 @@ import Student from '@/lib/mongodb/models/Student';
 import mongoose from 'mongoose';
 import type { FeePayment as FeePaymentType, CreatePaymentInput, DashboardStats } from '@/types/payment.types';
 import { requireWorkspaceContext, workspaceFilter, workspaceValue, type WorkspaceContext } from '@/lib/saas/workspace';
+import { writeAuditLog } from '@/lib/saas/audit';
 
 function normalizePhoneNumber(phone?: string | null): string | null {
   if (!phone) return null;
@@ -33,12 +34,12 @@ async function sendPaymentConfirmationMessage(
   context: WorkspaceContext
 ): Promise<void> {
   try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-    const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
+    const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
+    const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER?.trim();
+    const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM?.trim();
 
-    if (!accountSid || !authToken || !fromNumber) return;
+    if (!accountSid || !authToken || (!fromNumber && !whatsappFrom)) return;
 
     const student = await Student.findOne(workspaceFilter(context, { _id: payment.student_id }))
       .select('full_name phone whatsapp_phone guardian_phone')
@@ -67,7 +68,7 @@ async function sendPaymentConfirmationMessage(
       return;
     }
 
-    if (smsTo) {
+    if (smsTo && fromNumber) {
       await twilio.messages.create({ body: message, from: fromNumber, to: smsTo });
     }
   } catch (error) {
@@ -141,8 +142,22 @@ export async function createPayment(input: CreatePaymentInput): Promise<{ succes
       }, context);
     }
 
+    await writeAuditLog(context, {
+      action: 'payment.created',
+      entity_type: 'payment',
+      entity_id: payment._id.toHexString(),
+      description: `Created ${payment.status} payment for ${formatPaymentAmount(payment.amount)}`,
+      metadata: {
+        student_id: payment.student_id.toString(),
+        class_id: payment.class_id?.toString(),
+        amount: payment.amount,
+        status: payment.status,
+      },
+    });
+
     revalidatePath('/payments');
     revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     console.error('Error creating payment:', error);
@@ -161,8 +176,18 @@ export async function updatePayment(id: string, input: Partial<CreatePaymentInpu
 
     const updated = await FeePayment.findOneAndUpdate(workspaceFilter(context, { _id: id }), input, { new: true });
     if (!updated) return { success: false, error: 'Payment not found.' };
+
+    await writeAuditLog(context, {
+      action: 'payment.updated',
+      entity_type: 'payment',
+      entity_id: updated._id.toHexString(),
+      description: `Updated payment ${updated._id.toHexString()}`,
+      metadata: { status: updated.status, amount: updated.amount },
+    });
+
     revalidatePath('/payments');
     revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -180,7 +205,7 @@ export async function markPaymentAsPaid(
 
   try {
     const updated = await FeePayment.findOneAndUpdate(
-      workspaceFilter(context, { _id: paymentId }),
+      workspaceFilter(context, { _id: paymentId, status: { $ne: 'paid' } }),
       {
         status: 'paid',
         payment_method: paymentMethod,
@@ -190,7 +215,13 @@ export async function markPaymentAsPaid(
       { new: true }
     );
 
-    if (!updated) return { success: false, error: 'Payment not found.' };
+    if (!updated) {
+      const existing = await FeePayment.findOne(workspaceFilter(context, { _id: paymentId }))
+        .select('status')
+        .lean();
+      if ((existing as any)?.status === 'paid') return { success: true };
+      return { success: false, error: 'Payment not found.' };
+    }
 
     await sendPaymentConfirmationMessage({
       student_id: updated.student_id,
@@ -199,8 +230,21 @@ export async function markPaymentAsPaid(
       payment_method: updated.payment_method,
     }, context);
 
+    await writeAuditLog(context, {
+      action: 'payment.paid',
+      entity_type: 'payment',
+      entity_id: updated._id.toHexString(),
+      description: `Marked payment as paid: ${formatPaymentAmount(updated.amount)}`,
+      metadata: {
+        student_id: updated.student_id.toString(),
+        payment_method: updated.payment_method,
+        amount: updated.amount,
+      },
+    });
+
     revalidatePath('/payments');
     revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -266,8 +310,16 @@ export async function generateMonthlyFees(targetMonth: Date): Promise<{ success:
       }
     }
 
+    await writeAuditLog(context, {
+      action: 'payment.fees_generated',
+      entity_type: 'payment_batch',
+      description: `Generated ${count} fee record${count === 1 ? '' : 's'}`,
+      metadata: { target_month: monthStartStr, count },
+    });
+
     revalidatePath('/payments');
     revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true, count };
   } catch (error: any) {
     console.error('Error generating monthly fees:', error);
@@ -285,8 +337,19 @@ export async function markOverduePayments(): Promise<{ success: boolean; error?:
       workspaceFilter(context, { status: 'pending', due_date: { $lt: today } }),
       { status: 'overdue' }
     );
+
+    if (result.modifiedCount > 0) {
+      await writeAuditLog(context, {
+        action: 'payment.overdue_marked',
+        entity_type: 'payment_batch',
+        description: `Marked ${result.modifiedCount} payment${result.modifiedCount === 1 ? '' : 's'} overdue`,
+        metadata: { count: result.modifiedCount, date: today },
+      });
+    }
+
     revalidatePath('/payments');
     revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true, count: result.modifiedCount };
   } catch (error: any) {
     console.error('Error marking overdue payments:', error);
