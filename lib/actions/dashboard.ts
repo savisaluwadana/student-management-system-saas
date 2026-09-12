@@ -23,82 +23,97 @@ export interface FullDashboardData {
   topClasses: TopClass[]; overduePayments: OverduePayment[]; totalOverdueAmount: number;
 }
 
+const formatActivityAmount = (amount: number) =>
+  new Intl.NumberFormat('en-LK', {
+    style: 'currency',
+    currency: 'LKR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+
 export async function getDashboardData(): Promise<FullDashboardData> {
   await connectDB();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoKey = thirtyDaysAgo.toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
 
-  const [studentCount, teacherCount, classCount, tutorialCount] = await Promise.all([
+  const [studentCount, teacherCount, classCount, tutorialCount, payments, recentPayments, attendanceData, classes, overdueData] = await Promise.all([
     Student.countDocuments({ status: 'active' }),
     User.countDocuments({ role: 'teacher' }),
     Class.countDocuments({ status: 'active' }),
     TutorialModel.countDocuments(),
+    FeePayment.find({ status: 'paid' }).select('amount payment_month').lean(),
+    FeePayment.find({ status: 'paid' })
+      .sort({ created_at: -1 })
+      .limit(5)
+      .populate('student_id', 'full_name')
+      .lean({ virtuals: true }),
+    Attendance.find({ date: { $gte: thirtyDaysAgoKey } })
+      .select('date status')
+      .sort({ date: 1 })
+      .lean(),
+    Class.find({ status: 'active' }).select('class_name class_code').lean({ virtuals: true }),
+    FeePayment.find({ status: 'pending', due_date: { $lt: today } })
+      .sort({ due_date: 1 })
+      .limit(10)
+      .populate('student_id', 'full_name')
+      .lean({ virtuals: true }),
   ]);
 
-  const payments = await FeePayment.find({ status: 'paid' }).select('amount payment_month').lean();
-  const totalRevenue = (payments as any[]).reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalRevenue = (payments as any[]).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
-  // Revenue chart (last 6 months)
   const chartMap = new Map<string, number>();
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(); d.setMonth(d.getMonth() - i);
-    chartMap.set(format(d, 'MMM'), 0);
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    chartMap.set(format(date, 'MMM'), 0);
   }
-  (payments as any[]).forEach((p) => {
-    const key = format(new Date(p.payment_month), 'MMM');
-    if (chartMap.has(key)) chartMap.set(key, (chartMap.get(key) || 0) + Number(p.amount));
+
+  (payments as any[]).forEach((payment) => {
+    if (!payment.payment_month) return;
+    const key = format(new Date(payment.payment_month), 'MMM');
+    if (chartMap.has(key)) {
+      chartMap.set(key, (chartMap.get(key) || 0) + Number(payment.amount || 0));
+    }
   });
+
   const revenueChart: ChartData[] = Array.from(chartMap.entries()).map(([name, revenue]) => ({ name, revenue }));
 
-  // Recent payments as activities
-  const recentPayments = await FeePayment.find({ status: 'paid' })
-    .sort({ created_at: -1 })
-    .limit(5)
-    .populate('student_id', 'full_name')
-    .lean({ virtuals: true });
-
-  const recentActivities: RecentActivity[] = (recentPayments as any[]).map((p) => ({
-    id: p._id.toString(),
+  const recentActivities: RecentActivity[] = (recentPayments as any[]).map((payment) => ({
+    id: payment._id.toString(),
     type: 'payment' as const,
-    description: `Payment of $${p.amount} received from ${p.student_id?.full_name || 'Unknown'}`,
-    timestamp: p.created_at,
+    description: `${formatActivityAmount(Number(payment.amount || 0))} received from ${payment.student_id?.full_name || 'Unknown student'}`,
+    timestamp: new Date(payment.created_at).toISOString(),
   }));
 
-  // Attendance trend
-  const attendanceData = await Attendance.find({ date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } })
-    .select('date status')
-    .sort({ date: 1 })
-    .lean();
-
-  const attendanceGrouped = (attendanceData as any[]).reduce((acc: any, record) => {
-    if (!acc[record.date]) acc[record.date] = { date: record.date, present: 0, absent: 0, late: 0, total: 0 };
-    acc[record.date].total++;
-    if (record.status === 'present') acc[record.date].present++;
-    else if (record.status === 'absent') acc[record.date].absent++;
-    else if (record.status === 'late') acc[record.date].late++;
+  const attendanceGrouped = (attendanceData as any[]).reduce((acc: Record<string, AttendanceTrendData>, record) => {
+    if (!acc[record.date]) {
+      acc[record.date] = { date: record.date, present: 0, absent: 0, late: 0, total: 0 };
+    }
+    acc[record.date].total += 1;
+    if (record.status === 'present') acc[record.date].present += 1;
+    else if (record.status === 'absent') acc[record.date].absent += 1;
+    else if (record.status === 'late') acc[record.date].late += 1;
     return acc;
   }, {});
-  const attendanceTrend: AttendanceTrendData[] = Object.values(attendanceGrouped);
 
+  const attendanceTrend: AttendanceTrendData[] = Object.values(attendanceGrouped);
   const totalAttendance = attendanceData.length;
-  const presentCount = (attendanceData as any[]).filter((a) => a.status === 'present' || a.status === 'late').length;
+  const presentCount = (attendanceData as any[]).filter((attendance) => attendance.status === 'present' || attendance.status === 'late').length;
   const attendanceRate = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0;
 
-  // Top classes
-  const classes = await Class.find({ status: 'active' }).select('id class_name class_code').lean({ virtuals: true });
   const topClasses: TopClass[] = await Promise.all(
-    (classes as any[]).slice(0, 5).map(async (cls) => {
-      const [enrollCount, clsAttendance] = await Promise.all([
-        Enrollment.countDocuments({ class_id: cls._id, status: 'active' }),
-        Attendance.find({ class_id: cls._id, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean(),
+    (classes as any[]).slice(0, 5).map(async (classItem) => {
+      const [enrollCount, classAttendance] = await Promise.all([
+        Enrollment.countDocuments({ class_id: classItem._id, status: 'active' }),
+        Attendance.find({ class_id: classItem._id, date: { $gte: thirtyDaysAgoKey } }).select('status').lean(),
       ]);
-      const total = (clsAttendance as any[]).length;
-      const present = (clsAttendance as any[]).filter((a) => a.status === 'present' || a.status === 'late').length;
+      const total = (classAttendance as any[]).length;
+      const present = (classAttendance as any[]).filter((attendance) => attendance.status === 'present' || attendance.status === 'late').length;
       return {
-        id: cls._id.toString(),
-        class_name: cls.class_name,
-        class_code: cls.class_code,
+        id: classItem._id.toString(),
+        class_name: classItem.class_name,
+        class_code: classItem.class_code,
         enrollment_count: enrollCount,
         attendance_rate: total > 0 ? Math.round((present / total) * 100) : 0,
       };
@@ -106,25 +121,26 @@ export async function getDashboardData(): Promise<FullDashboardData> {
   );
   topClasses.sort((a, b) => b.enrollment_count - a.enrollment_count);
 
-  // Overdue payments
-  const overdueData = await FeePayment.find({ status: 'pending', due_date: { $lt: today } })
-    .sort({ due_date: 1 })
-    .limit(10)
-    .populate('student_id', 'full_name')
-    .lean({ virtuals: true });
-
-  const overduePayments: OverduePayment[] = (overdueData as any[]).map((p) => ({
-    student_id: p.student_id?._id?.toString(),
-    student_name: p.student_id?.full_name || 'Unknown',
-    amount: p.amount,
-    due_date: p.due_date,
-    days_overdue: Math.floor((new Date().getTime() - new Date(p.due_date).getTime()) / (1000 * 60 * 60 * 24)),
+  const overduePayments: OverduePayment[] = (overdueData as any[]).map((payment) => ({
+    student_id: payment.student_id?._id?.toString() || '',
+    student_name: payment.student_id?.full_name || 'Unknown student',
+    amount: Number(payment.amount || 0),
+    due_date: payment.due_date,
+    days_overdue: Math.max(0, Math.floor((Date.now() - new Date(payment.due_date).getTime()) / (1000 * 60 * 60 * 24))),
   }));
-  const totalOverdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0);
 
   return {
-    totalStudents: studentCount, totalTeachers: teacherCount, activeClasses: classCount,
-    totalTutorials: tutorialCount, totalRevenue, attendanceRate, revenueChart,
-    recentActivities: recentActivities.slice(0, 5), attendanceTrend, topClasses, overduePayments, totalOverdueAmount,
+    totalStudents: studentCount,
+    totalTeachers: teacherCount,
+    activeClasses: classCount,
+    totalTutorials: tutorialCount,
+    totalRevenue,
+    attendanceRate,
+    revenueChart,
+    recentActivities,
+    attendanceTrend,
+    topClasses,
+    overduePayments,
+    totalOverdueAmount: overduePayments.reduce((sum, payment) => sum + payment.amount, 0),
   };
 }

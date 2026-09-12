@@ -1,87 +1,111 @@
-# EduFlow - Student Management System SaaS
+# Academix — Education Operations SaaS
 
-EduFlow is a modern, all-in-one SaaS platform designed for educational institutes to manage their day-to-day operations efficiently. From student enrollment to fee management and attendance tracking, EduFlow provides a unified dashboard to streamline "ed-admin" tasks.
+Academix is a multi-module education operations platform for tuition centres, academies and private institutes. It combines student records, classes, attendance, assessments, fee collections, communications and reporting in one workspace.
 
-<img width="3024" height="1720" alt="image" src="https://github.com/user-attachments/assets/9d57e1e9-8442-4f6e-a7c6-83f0f38e3aab" />
+## Product modules
 
-## 🚀 Key Features
+- **Operations dashboard** — revenue, attendance, active students, classes, overdue fees and recent activity.
+- **Student CRM** — profiles, enrollments, guardian details and barcode workflows.
+- **Teachers & classes** — staff, classes, schedules and teaching assignments.
+- **Attendance** — manual, bulk and barcode-based attendance with reports.
+- **Assessments** — create assessments, enter grades and track academic progress.
+- **Fees & receipts** — paid/pending/overdue tracking and printable LKR receipts.
+- **Communications** — email/SMS/WhatsApp-ready messaging workflows.
+- **Reports** — operational, financial and attendance reporting.
+- **Institutes** — branch/institute records for multi-site operations.
+- **SaaS account layer** — role-aware navigation, plan/usage surface and data-aware workspace onboarding.
 
-*   **Dashboard & Analytics**: Real-time overview of revenue, active students, and attendance trends.
-*   **Student Management**: Comprehensive profiles, enrollment tracking, and academic records.
-*   **Session Scheduling**: manage class schedules, sessions, and teacher assignments.
-*   **Attendance Tracking**: Digital attendance sheets with automated reporting.
-*   **Fee Management**: Record payments, track dues, and generate financial reports.
-*   **Tutorials & Resources**: Upload and manage learning materials for students.
-*   **Communications**: integrated messaging system (Email/SMS) for announcements [NEW].
-*   **Role-Based Access**: Secure access for Admins, Teachers, and Students.
+## Stack
 
-## 🛠 Tech Stack
+- Next.js 14 App Router
+- React 18 + TypeScript
+- Tailwind CSS + Radix/shadcn UI
+- Framer Motion
+- MongoDB + Mongoose
+- JWT authentication with HttpOnly cookies
+- Recharts
+- Resend / Twilio integration points
 
-*   **Frontend**: [Next.js 14](https://nextjs.org/) (App Router), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/)
-*   **UI Framework**: [Tailwind CSS](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Framer Motion](https://www.framer.com/motion/)
-*   **Backend & Database**: [Supabase](https://supabase.com/) (PostgreSQL, Auth, Realtime)
-*   **Icons**: [Lucide React](https://lucide.dev/)
+## Getting started
 
-## ⚡️ Getting Started
+### 1. Install dependencies
 
-### Prerequisites
-
-*   Node.js 18+
-*   npm or yarn
-*   A Supabase project
-
-### Installation
-
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/eduflow.git
-    cd eduflow
-    ```
-
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
-
-3.  **Environment Setup**
-    Create a `.env.local` file in the root directory and add your Supabase credentials:
-    ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-    ```
-
-4.  **Database Setup**
-    Run the SQL scripts provided in `full_database_schema.sql` in your Supabase SQL Editor to set up the tables and policies.
-
-5.  **Run the development server**
-    ```bash
-    npm run dev
-    ```
-
-    Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-## 📁 Project Structure
-
-```
-├── app/                  # Next.js App Router pages
-│   ├── (auth)/           # Authentication routes (login, signup)
-│   ├── (dashboard)/      # Protected dashboard routes
-│   └── page.tsx          # Landing page
-├── components/           # Reusable UI components
-│   ├── ui/               # Shadcn UI primitives
-│   └── ...               # Feature-specific components
-├── lib/                  # Utilities and server actions
-│   ├── actions/          # Server Actions (Backend logic)
-│   └── supabase/         # Supabase client configuration
-└── types/                # TypeScript type definitions
+```bash
+npm ci
 ```
 
-## 🔒 Security
+### 2. Configure the environment
 
-*   **Row Level Security (RLS)**: Data access is strictly controlled at the database level using Supabase RLS policies.
-*   **Middleware Protection**: Protected routes are guarded by Next.js middleware ensuring only authenticated access.
+Copy the example file:
 
-## 📄 License
+```bash
+cp .env.example .env.local
+```
 
-This project is licensed under the MIT License.
+At minimum, configure:
+
+```env
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=use-a-long-random-production-secret
+JWT_EXPIRES_IN=7d
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+Notification providers are optional during local development. See `.env.example` for Resend, Twilio and cron variables.
+
+### 3. Run locally
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run build
+```
+
+GitHub Actions runs both checks for pushes and pull requests targeting `main`.
+
+## Project structure
+
+```text
+app/
+  (auth)/            Authentication screens
+  (dashboard)/       Protected workspace routes
+  api/               Route handlers
+components/
+  dashboard/         Dashboard and analytics UI
+  layout/            Navigation and workspace shell
+  ui/                Shared UI primitives
+lib/
+  actions/           Server actions / domain operations
+  auth/              JWT helpers
+  mongodb/           Connection and Mongoose models
+  services/          Notifications and integrations
+types/                Domain types
+```
+
+## Security notes
+
+- Dashboard routes are verified again in the server layout using the signed JWT; middleware is only a lightweight routing guard.
+- Authentication cookies are HttpOnly and use `SameSite=Lax`.
+- `JWT_SECRET` and `MONGODB_URI` must be supplied through deployment secrets, never committed.
+- Production SaaS tenant isolation should be enforced in the data layer before onboarding unrelated customer organizations into the same deployment.
+
+## SaaS roadmap
+
+The current branch establishes a stronger product shell and plan/usage UI. The next production-hardening milestones are:
+
+1. First-class tenant/workspace ownership and tenant-scoped queries across every domain model.
+2. Subscription provider integration and server-side entitlement enforcement.
+3. Team invitations and granular permissions beyond the current admin/teacher roles.
+4. Real notification provider delivery, templates and delivery logs.
+5. Audit logs, data export/retention controls and production observability.
+
+## License
+
+MIT

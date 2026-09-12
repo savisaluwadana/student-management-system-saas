@@ -1,275 +1,244 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  BookOpenCheck,
+  CalendarCheck2,
+  CircleDollarSign,
+  Clock3,
+  GraduationCap,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { OverviewChart } from "@/components/dashboard/OverviewChart";
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
 import { TopClassesWidget } from "@/components/dashboard/TopClassesWidget";
 import { OverduePaymentBanner } from "@/components/dashboard/OverduePaymentBanner";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    DollarSign,
-    Users,
-    GraduationCap,
-    ArrowUpRight,
-    Activity,
-    Video,
-    CheckCircle2,
-    AlertTriangle
-} from "lucide-react";
-import { formatCurrency, cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 
 interface DashboardContentProps {
-    data: {
-        totalRevenue: number;
-        totalStudents: number;
-        activeClasses: number;
-        totalTeachers: number;
-        totalTutorials: number;
-        attendanceRate: number;
-        recentActivities: any[];
-        revenueChart: any[];
-        attendanceTrend: any[];
-        topClasses: any[];
-        overduePayments: any[];
-        totalOverdueAmount: number;
-    };
+  data: {
+    totalRevenue: number;
+    totalStudents: number;
+    activeClasses: number;
+    totalTeachers: number;
+    totalTutorials: number;
+    attendanceRate: number;
+    recentActivities: any[];
+    revenueChart: any[];
+    attendanceTrend: any[];
+    topClasses: any[];
+    overduePayments: any[];
+    totalOverdueAmount: number;
+  };
 }
+
+const fadeUp = {
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+};
 
 export function DashboardContent({ data }: DashboardContentProps) {
-    return (
-        <div className="flex-1 space-y-6 p-4 pt-6 bg-transparent">
-            <div className="flex items-center justify-between space-y-2">
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <h2 className="text-4xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
-                        Dashboard
-                    </h2>
-                    <p className="text-muted-foreground mt-1">
-                        Overview of your institute&apos;s performance.
-                    </p>
-                </motion.div>
-            </div>
+  const hasOverdue = data.overduePayments.length > 0;
 
-            {/* Overdue Payment Banner */}
-            {data.overduePayments.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <OverduePaymentBanner
-                        overduePayments={data.overduePayments}
-                        totalOverdueAmount={data.totalOverdueAmount}
-                    />
-                </motion.div>
-            )}
-
-            {/* Quick Actions */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-            >
-                <QuickActions />
-            </motion.div>
-
-            {/* Stats Cards - Now 6 cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                <StatsCard
-                    title="Total Revenue"
-                    icon={DollarSign}
-                    value={formatCurrency(data.totalRevenue)}
-                    subtext="All time revenue"
-                    color="text-zinc-800"
-                    delay={0.1}
-                />
-                <StatsCard
-                    title="Active Students"
-                    icon={Users}
-                    value={data.totalStudents.toString()}
-                    subtext="Currently enrolled"
-                    color="text-zinc-800"
-                    delay={0.15}
-                />
-                <StatsCard
-                    title="Active Classes"
-                    icon={GraduationCap}
-                    value={data.activeClasses.toString()}
-                    subtext="Running classes"
-                    color="text-zinc-800"
-                    delay={0.2}
-                />
-                <StatsCard
-                    title="Teachers"
-                    icon={Activity}
-                    value={data.totalTeachers.toString()}
-                    subtext="Teaching staff"
-                    color="text-zinc-800"
-                    delay={0.25}
-                />
-                <StatsCard
-                    title="Tutorials"
-                    icon={Video}
-                    value={data.totalTutorials.toString()}
-                    subtext="Learning materials"
-                    color="text-zinc-800"
-                    delay={0.3}
-                />
-                <StatsCard
-                    title="Attendance Rate"
-                    icon={CheckCircle2}
-                    value={`${data.attendanceRate}%`}
-                    subtext="30-day average"
-                    color={data.attendanceRate >= 80 ? "text-zinc-800" : data.attendanceRate >= 60 ? "text-zinc-800" : "text-zinc-800"}
-                    delay={0.35}
-                />
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                {/* Revenue Chart */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
-                    className="col-span-4"
-                >
-                    <Card className="h-full border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Revenue Overview</CardTitle>
-                            <CardDescription>Monthly revenue performance</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pl-2">
-                            <OverviewChart data={data.revenueChart} />
-                        </CardContent>
-                    </Card>
-                </motion.div>
-
-                {/* Top Classes */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                    className="col-span-3"
-                >
-                    <TopClassesWidget classes={data.topClasses} />
-                </motion.div>
-            </div>
-
-            {/* Attendance Trend & Recent Activity Row */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                {/* Attendance Trend Chart */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                    className="col-span-4"
-                >
-                    <AttendanceTrendChart data={data.attendanceTrend} />
-                </motion.div>
-
-                {/* Recent Activity */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
-                    className="col-span-3"
-                >
-                    <Card className="h-full border-none shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>
-                                Latest transactions and events
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                {data.recentActivities.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground text-center py-10">
-                                        No recent activity.
-                                    </p>
-                                ) : (
-                                    data.recentActivities.map((activity, i) => {
-                                        const date = new Date(activity.timestamp);
-                                        const dateStr = `${date.getUTCDate().toString().padStart(2, '0')}/${(date.getUTCMonth() + 1).toString().padStart(2, '0')}/${date.getUTCFullYear()}`;
-                                        const timeStr = `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
-
-                                        return (
-                                            <div
-                                                key={activity.id || i}
-                                                className="flex items-center group"
-                                            >
-                                                <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-gray-100 dark:border-zinc-700 group-hover:scale-105 transition-transform duration-200">
-                                                    <span className="font-bold text-sm text-foreground">
-                                                        {activity.type === "payment"
-                                                            ? "$"
-                                                            : activity.type === "login"
-                                                                ? "L"
-                                                                : "S"}
-                                                    </span>
-                                                </div>
-                                                <div className="ml-3 space-y-0.5 flex-1 min-w-0">
-                                                    <p className="text-sm font-medium leading-none truncate">
-                                                        {activity.description}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {dateStr}
-                                                    </p>
-                                                </div>
-                                                <div className="ml-2 font-medium text-xs text-muted-foreground whitespace-nowrap">
-                                                    {timeStr}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-            </div>
+  return (
+    <div className="space-y-6 py-2">
+      <motion.header
+        {...fadeUp}
+        transition={{ duration: 0.35 }}
+        className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
+      >
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Operations overview</p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Your institute, at a glance.</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+            Monitor attendance, collections, classes and student operations from one workspace.
+          </p>
         </div>
-    );
-}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/reports">View reports</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/students/new">Add student <ArrowUpRight className="ml-2 h-4 w-4" /></Link>
+          </Button>
+        </div>
+      </motion.header>
 
-function StatsCard({
-    title,
-    icon: Icon,
-    value,
-    subtext,
-    color,
-    delay = 0,
-}: any) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay }}
-        >
-            <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 group cursor-default relative overflow-hidden h-full">
-                <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Icon className="h-12 w-12" />
-                </div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                        {title}
-                    </CardTitle>
-                    <div className={cn("p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800", color)}>
-                        <Icon className="h-3.5 w-3.5" />
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <div className="text-2xl font-bold tracking-tight">{value}</div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        {subtext}
-                    </p>
-                </CardContent>
-            </Card>
+      {hasOverdue && (
+        <motion.div {...fadeUp} transition={{ duration: 0.35, delay: 0.05 }}>
+          <OverduePaymentBanner
+            overduePayments={data.overduePayments}
+            totalOverdueAmount={data.totalOverdueAmount}
+          />
         </motion.div>
-    );
+      )}
+
+      <motion.section
+        {...fadeUp}
+        transition={{ duration: 0.35, delay: 0.08 }}
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <MetricCard
+          title="Collected revenue"
+          value={formatCurrency(data.totalRevenue)}
+          detail="All recorded paid fees"
+          icon={CircleDollarSign}
+          href="/payments"
+        />
+        <MetricCard
+          title="Active students"
+          value={data.totalStudents.toLocaleString()}
+          detail={`${data.activeClasses} active classes`}
+          icon={Users}
+          href="/students"
+        />
+        <MetricCard
+          title="Attendance"
+          value={`${data.attendanceRate}%`}
+          detail="Rolling 30-day attendance"
+          icon={CalendarCheck2}
+          href="/attendance/reports"
+        />
+        <MetricCard
+          title="Teaching team"
+          value={data.totalTeachers.toLocaleString()}
+          detail={`${data.totalTutorials} learning resources`}
+          icon={GraduationCap}
+          href="/teachers"
+        />
+      </motion.section>
+
+      <motion.div {...fadeUp} transition={{ duration: 0.35, delay: 0.12 }}>
+        <QuickActions />
+      </motion.div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6">
+          <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.16 }}>
+            <Card className="border-border/70 shadow-sm">
+              <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+                <div>
+                  <CardTitle className="text-base">Revenue trend</CardTitle>
+                  <CardDescription>Collections recorded across the last six months.</CardDescription>
+                </div>
+                <div className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
+                  6 months
+                </div>
+              </CardHeader>
+              <CardContent className="pl-1 pr-4 sm:pl-2">
+                <OverviewChart data={data.revenueChart} />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.2 }}>
+            <AttendanceTrendChart data={data.attendanceTrend} />
+          </motion.div>
+        </div>
+
+        <div className="space-y-6">
+          <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.18 }}>
+            <OnboardingChecklist
+              totalStudents={data.totalStudents}
+              totalTeachers={data.totalTeachers}
+              activeClasses={data.activeClasses}
+              attendanceRate={data.attendanceRate}
+              totalRevenue={data.totalRevenue}
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.22 }}>
+            <TopClassesWidget classes={data.topClasses} />
+          </motion.div>
+
+          <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.26 }}>
+            <Card className="border-border/70 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">Recent activity</CardTitle>
+                    <CardDescription>Latest payment events.</CardDescription>
+                  </div>
+                  <Clock3 className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {data.recentActivities.length === 0 ? (
+                  <div className="rounded-xl border border-dashed p-5 text-center">
+                    <BookOpenCheck className="mx-auto h-5 w-5 text-muted-foreground" />
+                    <p className="mt-2 text-sm font-medium">No activity yet</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Payments and operational events will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {data.recentActivities.slice(0, 5).map((activity, index) => {
+                      const date = new Date(activity.timestamp);
+                      const valid = !Number.isNaN(date.getTime());
+                      return (
+                        <div key={activity.id || index} className="flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-muted/60">
+                          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                            <CircleDollarSign className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium leading-snug">{activity.description}</p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {valid ? date.toLocaleString('en-LK', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
+function MetricCard({
+  title,
+  value,
+  detail,
+  icon: Icon,
+  href,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+}) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full border-border/70 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-muted-foreground">{title}</p>
+              <p className="mt-2 truncate text-2xl font-bold tracking-tight">{value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+            </div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-muted/45">
+              <Icon className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center text-[11px] font-semibold text-muted-foreground transition-colors group-hover:text-foreground">
+            Open module <ArrowUpRight className="ml-1 h-3 w-3" />
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}

@@ -1,355 +1,227 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { redirect } from 'next/navigation';
 import {
   ArrowRight,
-  CheckCircle2,
-  LayoutDashboard,
-  ShieldCheck,
-  Users,
-  Zap,
   BarChart3,
-  Clock,
-  Star,
+  CalendarCheck2,
+  Check,
+  CircleDollarSign,
   GraduationCap,
-  Building2,
-  Globe,
+  Layers3,
+  MessageSquareText,
+  ShieldCheck,
+  Sparkles,
+  Users,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth';
-import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+
+const features = [
+  { icon: Users, title: 'Student CRM', copy: 'Profiles, enrollments, guardian information, barcodes and searchable records.' },
+  { icon: CalendarCheck2, title: 'Attendance operations', copy: 'Manual, bulk and barcode attendance with trend reporting.' },
+  { icon: CircleDollarSign, title: 'Fees & collections', copy: 'Track paid, pending and overdue fees with printable receipts.' },
+  { icon: GraduationCap, title: 'Academic workflows', copy: 'Classes, sessions, assessments, grades and learning resources in one place.' },
+  { icon: MessageSquareText, title: 'Communications', copy: 'Coordinate student and guardian outreach without switching systems.' },
+  { icon: BarChart3, title: 'Management reporting', copy: 'See operational health, attendance and revenue from a unified dashboard.' },
+];
+
+const plans = [
+  { name: 'Starter', price: 'LKR 5,900', description: 'For small classes moving off spreadsheets.', items: ['Up to 50 students', '3 team members', 'Attendance & fees', 'Core reporting'] },
+  { name: 'Professional', price: 'LKR 14,900', description: 'For growing tuition centres and academies.', items: ['Up to 500 students', '20 team members', 'Multi-branch workflows', 'Advanced operations'], featured: true },
+  { name: 'Scale', price: 'Custom', description: 'For larger education groups and multi-site teams.', items: ['Unlimited scale', 'Priority support', 'SSO & governance', 'Custom integrations'] },
+];
 
 export default async function LandingPage() {
   const user = await getCurrentUser();
-
-  if (user) {
-    redirect('/dashboard');
-  }
+  if (user) redirect('/dashboard');
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black font-sans selection:bg-primary/20">
-      {/* Navigation */}
-      <nav className="border-b bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Zap className="h-6 w-6 text-primary" />
-              </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-zinc-800">
-                Academix
-              </span>
+    <main className="min-h-screen overflow-hidden bg-background text-foreground">
+      <nav className="sticky top-0 z-50 border-b bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background">
+              <Sparkles className="h-4 w-4" />
             </div>
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-              <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-              <Link href="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Documentation</Link>
+            <div>
+              <p className="font-bold tracking-tight">Academix</p>
+              <p className="text-[10px] leading-none text-muted-foreground">Education operations OS</p>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="/login">
-                <Button variant="ghost" className="font-medium">
-                  Login
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
+          </Link>
+
+          <div className="mx-auto hidden items-center gap-7 md:flex">
+            <a href="#product" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Product</a>
+            <a href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Pricing</a>
+            <Link href="/docs" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Docs</Link>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" asChild><Link href="/login">Log in</Link></Button>
+            <Button asChild><Link href="/signup">Start free <ArrowRight className="ml-1.5 h-4 w-4" /></Link></Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent -z-10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center px-4 py-1.5 rounded-full border bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <span className="flex h-2 w-2 rounded-full bg-zinc-800 mr-2 animate-pulse" />
-            <span className="text-sm font-medium text-muted-foreground">v2.0 — Now with AI-powered insights</span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-            Manage your institute <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-zinc-800 to-zinc-800">
-              with superpowers
-            </span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-xl text-muted-foreground mb-10 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
-            The all-in-one platform for modern education management. Track attendance, payments, sessions, and tutorials effortlessly.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
-            <Link href="/signup">
-              <Button size="lg" className="h-12 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:scale-105">
-                Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+      <section className="relative border-b">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/0.09),transparent_36%)]" />
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:px-8 lg:py-28">
+          <div>
+            <Badge variant="outline" className="mb-6 rounded-full px-3 py-1">Built for modern education operators</Badge>
+            <h1 className="max-w-3xl text-5xl font-bold tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              Run the institute, not the admin chaos.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+              Academix brings students, attendance, classes, fees, assessments, communications and reporting into one focused operating system.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" className="h-12 px-6" asChild>
+                <Link href="/signup">Create your workspace <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="h-12 px-8 text-lg rounded-full border-2 hover:bg-secondary transition-all">
-                Live Demo
+              <Button size="lg" variant="outline" className="h-12 px-6" asChild>
+                <Link href="/login">Open existing workspace</Link>
               </Button>
-            </Link>
-          </div>
-        </div>
-        <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[120px] -z-10" />
-        <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[120px] -z-10" />
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 border-y bg-white dark:bg-zinc-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <StatItem icon={Users} value="10,000+" label="Active Students" />
-            <StatItem icon={Building2} value="500+" label="Institutes" />
-            <StatItem icon={Globe} value="15+" label="Countries" />
-            <StatItem icon={Star} value="4.9/5" label="Average Rating" />
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section id="features" className="py-24 bg-slate-50 dark:bg-black/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">Features</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything you need to run your institute</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Stop wrestling with spreadsheets. Academix provides a unified dashboard for all your administrative needs.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard icon={LayoutDashboard} title="Smart Dashboard" description="Get a bird's eye view of your institute's performance with real-time analytics and insights." />
-            <FeatureCard icon={Users} title="Student Management" description="Track student profiles, attendance, and academic progress in one secure place." />
-            <FeatureCard icon={ShieldCheck} title="Secure Payments" description="Record fees, generate invoices, and track revenue with bank-grade security." />
-            <FeatureCard icon={GraduationCap} title="Assessments & Grades" description="Create exams, enter grades, and generate comprehensive report cards automatically." />
-            <FeatureCard icon={Clock} title="Session Scheduling" description="Manage class sessions, tutorials, and generate automated schedules with ease." />
-            <FeatureCard icon={BarChart3} title="Advanced Reports" description="Generate financial, attendance, and academic reports with export to PDF and CSV." />
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-white dark:bg-zinc-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">Pricing</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Simple, transparent pricing</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Choose the plan that fits your institute. All plans come with a 14-day free trial.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <PricingCard
-              name="Starter"
-              price="$19"
-              description="Perfect for small tutoring centers"
-              features={['Up to 50 students', '3 classes', 'Basic reports', 'Email support', 'Attendance tracking']}
-            />
-            <PricingCard
-              name="Professional"
-              price="$49"
-              description="For growing institutes"
-              features={['Up to 500 students', 'Unlimited classes', 'Advanced analytics', 'Priority support', 'SMS & WhatsApp', 'Custom branding', 'API access']}
-              popular
-            />
-            <PricingCard
-              name="Enterprise"
-              price="$99"
-              description="For large multi-branch institutes"
-              features={['Unlimited students', 'Multi-branch support', 'White-label solution', 'Dedicated account manager', 'SLA guarantee', 'Custom integrations', 'On-premise option']}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 bg-slate-50 dark:bg-black/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">Testimonials</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Loved by educators worldwide</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              See what institute directors and teachers are saying about Academix.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <TestimonialCard
-              quote="Academix has transformed how we manage our institute. We saved 15 hours per week on administrative tasks."
-              name="Sarah Chen"
-              role="Director, EduCore Academy"
-            />
-            <TestimonialCard
-              quote="The attendance tracking and payment management features are incredible. Our collection rate improved by 30%."
-              name="Rajesh Patel"
-              role="Founder, BrightMinds Tutoring"
-            />
-            <TestimonialCard
-              quote="As a teacher, I love how easy it is to manage grades and communicate with students. The interface is beautiful."
-              name="Emma Williams"
-              role="Senior Teacher, TechEd Institute"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-white dark:bg-zinc-950">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary to-zinc-800 rounded-3xl blur-3xl opacity-10" />
-            <div className="relative bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-12 md:p-16 text-white overflow-hidden">
-              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/20 rounded-full blur-[80px] translate-x-1/3 -translate-y-1/3" />
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 relative z-10">Ready to transform your institute?</h2>
-              <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto relative z-10">
-                Join 500+ institutes already using Academix. Start your 14-day free trial today.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-                <Link href="/signup">
-                  <Button size="lg" className="h-12 px-8 text-lg rounded-full bg-white text-zinc-900 hover:bg-zinc-100 shadow-xl transition-all hover:scale-105">
-                    Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> No credit card for setup</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Role-aware access</span>
+              <span className="flex items-center gap-1.5"><Layers3 className="h-3.5 w-3.5" /> Multi-branch ready</span>
             </div>
           </div>
+
+          <ProductPreview />
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Zap className="h-5 w-5 text-primary" />
+      <section id="product" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">One workspace</p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">The daily operating layer for an education business.</h2>
+          <p className="mt-4 text-muted-foreground">Designed around the workflows staff actually repeat every day, with less jumping between spreadsheets, chat threads and disconnected tools.</p>
+        </div>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <Card key={feature.title} className="border-border/70 shadow-none transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardContent className="p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border bg-muted/40">
+                  <feature.icon className="h-5 w-5" />
                 </div>
-                <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-zinc-800">
-                  Academix
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                The all-in-one platform for modern education management.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-sm">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><Link href="/login" className="hover:text-foreground transition-colors">Demo</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-sm">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Careers</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-sm">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Terms</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t pt-8 text-center text-sm text-muted-foreground">
-            © 2026 Academix Inc. All rights reserved.
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function StatItem({ icon: Icon, value, label }: { icon: any; value: string; label: string }) {
-  return (
-    <div className="space-y-2">
-      <Icon className="h-6 w-6 text-primary mx-auto mb-2" />
-      <div className="text-3xl font-bold tracking-tight">{value}</div>
-      <div className="text-sm text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
-function FeatureCard({ icon: Icon, title, description }: { icon: any; title: string; description: string }) {
-  return (
-    <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-        <Icon className="h-6 w-6 text-primary" />
-      </div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-function PricingCard({ name, price, description, features, popular }: { name: string; price: string; description: string; features: string[]; popular?: boolean }) {
-  return (
-    <Card className={`relative ${popular ? 'border-primary shadow-xl shadow-primary/10 scale-105' : 'hover:shadow-lg'} transition-all duration-300`}>
-      {popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-white shadow-lg">Most Popular</Badge>
-        </div>
-      )}
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl">{name}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-        <div className="pt-4">
-          <span className="text-4xl font-bold">{price}</span>
-          <span className="text-muted-foreground">/month</span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {features.map((feature, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-zinc-800 flex-shrink-0" />
-            <span>{feature}</span>
-          </div>
-        ))}
-        <Link href="/signup" className="block pt-4">
-          <Button className={`w-full ${popular ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20' : ''}`} variant={popular ? 'default' : 'outline'}>
-            Start Free Trial
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TestimonialCard({ quote, name, role }: { quote: string; name: string; role: string }) {
-  return (
-    <Card className="hover:shadow-lg transition-all duration-300">
-      <CardContent className="pt-6">
-        <div className="flex gap-1 mb-4">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-4 w-4 fill-zinc-300 text-zinc-300" />
+                <h3 className="mt-5 font-semibold">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.copy}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
-        <blockquote className="text-muted-foreground mb-6 leading-relaxed italic">
-          &ldquo;{quote}&rdquo;
-        </blockquote>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-zinc-800 flex items-center justify-center text-white font-bold text-sm">
-            {name.split(' ').map(n => n[0]).join('')}
-          </div>
-          <div>
-            <p className="font-semibold text-sm">{name}</p>
-            <p className="text-xs text-muted-foreground">{role}</p>
+      </section>
+
+      <section className="border-y bg-muted/25">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-20 sm:px-6 lg:grid-cols-3 lg:px-8">
+          <Outcome value="1" label="workspace" copy="for students, academics and operations" />
+          <Outcome value="3" label="attendance modes" copy="manual, bulk and barcode scanning" />
+          <Outcome value="360°" label="operating view" copy="collections, attendance, classes and activity" />
+        </div>
+      </section>
+
+      <section id="pricing" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Pricing</p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Start small. Scale when operations demand it.</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">Plans are structured around workspace scale rather than charging staff for every useful feature.</p>
+        </div>
+
+        <div className="mx-auto mt-12 grid max-w-5xl gap-4 lg:grid-cols-3">
+          {plans.map((plan) => (
+            <Card key={plan.name} className={plan.featured ? 'border-foreground shadow-lg' : 'border-border/70 shadow-sm'}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold">{plan.name}</h3>
+                  {plan.featured && <Badge>Best fit</Badge>}
+                </div>
+                <p className="mt-5 text-3xl font-bold tracking-tight">{plan.price}</p>
+                <p className="mt-2 min-h-10 text-sm text-muted-foreground">{plan.description}</p>
+                <div className="my-5 border-t" />
+                <div className="space-y-3">
+                  {plan.items.map((item) => <div key={item} className="flex items-center gap-2 text-sm"><Check className="h-4 w-4" />{item}</div>)}
+                </div>
+                <Button variant={plan.featured ? 'default' : 'outline'} className="mt-6 w-full" asChild>
+                  <Link href="/signup">Start with {plan.name}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 pb-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-[28px] bg-foreground px-6 py-14 text-background sm:px-12">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-background/55">Less admin. Better visibility.</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight">Build the operating system your institute can grow on.</h2>
+              <p className="mt-3 text-sm leading-6 text-background/65">Start with your core student workflows and expand into reporting, multi-branch management and automation as your operation matures.</p>
+            </div>
+            <Button size="lg" variant="secondary" asChild><Link href="/signup">Start free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </section>
+
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <div className="flex items-center gap-2 text-foreground"><Sparkles className="h-4 w-4" /><span className="font-semibold">Academix</span></div>
+          <p>Student operations, attendance, academics and collections in one workspace.</p>
+          <div className="flex gap-4"><Link href="/docs" className="hover:text-foreground">Docs</Link><Link href="/login" className="hover:text-foreground">Login</Link></div>
+        </div>
+      </footer>
+    </main>
   );
+}
+
+function ProductPreview() {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-8 -z-10 rounded-full bg-foreground/5 blur-3xl" />
+      <div className="overflow-hidden rounded-[26px] border bg-background shadow-2xl shadow-foreground/10">
+        <div className="flex h-12 items-center gap-2 border-b px-4">
+          <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
+          <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+          <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/15" />
+          <span className="ml-2 text-[11px] font-medium text-muted-foreground">Academix Institute · Operations overview</span>
+        </div>
+        <div className="p-5 sm:p-6">
+          <div className="grid grid-cols-2 gap-3">
+            <PreviewMetric label="Students" value="248" icon={Users} />
+            <PreviewMetric label="Attendance" value="92%" icon={CalendarCheck2} />
+            <PreviewMetric label="Collected" value="LKR 1.2M" icon={CircleDollarSign} />
+            <PreviewMetric label="Classes" value="18" icon={GraduationCap} />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1.3fr_.7fr]">
+            <div className="rounded-2xl border p-4">
+              <div className="flex items-center justify-between"><p className="text-xs font-semibold">Collections trend</p><BarChart3 className="h-4 w-4 text-muted-foreground" /></div>
+              <div className="mt-6 flex h-28 items-end gap-2">
+                {[36, 52, 45, 70, 63, 86].map((height, index) => <div key={index} className="flex-1 rounded-t-md bg-foreground/80" style={{ height: `${height}%` }} />)}
+              </div>
+            </div>
+            <div className="rounded-2xl border p-4">
+              <p className="text-xs font-semibold">Today</p>
+              <div className="mt-4 space-y-3">
+                {['Mark Grade 10 attendance', 'Review overdue fees', 'Publish assessment'].map((item, index) => (
+                  <div key={item} className="flex items-start gap-2 text-[11px]"><span className={`mt-0.5 h-3.5 w-3.5 rounded-full border ${index === 0 ? 'bg-foreground' : ''}`} /><span>{item}</span></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewMetric({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
+  return <div className="rounded-2xl border bg-muted/20 p-3.5"><div className="flex items-center justify-between"><p className="text-[10px] font-medium text-muted-foreground">{label}</p><Icon className="h-3.5 w-3.5 text-muted-foreground" /></div><p className="mt-2 text-lg font-bold tracking-tight">{value}</p></div>;
+}
+
+function Outcome({ value, label, copy }: { value: string; label: string; copy: string }) {
+  return <div><p className="text-4xl font-bold tracking-tight">{value}</p><p className="mt-1 text-sm font-semibold">{label}</p><p className="mt-2 text-sm text-muted-foreground">{copy}</p></div>;
 }
