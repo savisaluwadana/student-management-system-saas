@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IActivityLog extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   user_id: mongoose.Types.ObjectId;
   action: string;
   entity_type: string;
@@ -14,6 +15,7 @@ export interface IActivityLog extends Document {
 
 const ActivityLogSchema = new Schema<IActivityLog>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     action: { type: String, required: true },
     entity_type: { type: String, required: true },

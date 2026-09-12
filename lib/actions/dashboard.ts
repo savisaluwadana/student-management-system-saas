@@ -9,6 +9,7 @@ import Enrollment from '@/lib/mongodb/models/Enrollment';
 import Attendance from '@/lib/mongodb/models/Attendance';
 import FeePayment from '@/lib/mongodb/models/FeePayment';
 import { format } from 'date-fns';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
 export interface ChartData { name: string; revenue: number }
 export interface RecentActivity { id: string; type: 'payment' | 'enrollment' | 'login'; description: string; timestamp: string }
@@ -32,28 +33,29 @@ const formatActivityAmount = (amount: number) =>
 
 export async function getDashboardData(): Promise<FullDashboardData> {
   await connectDB();
+  const context = await requireWorkspaceContext();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const thirtyDaysAgoKey = thirtyDaysAgo.toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
 
   const [studentCount, teacherCount, classCount, tutorialCount, payments, recentPayments, attendanceData, classes, overdueData] = await Promise.all([
-    Student.countDocuments({ status: 'active' }),
-    User.countDocuments({ role: 'teacher' }),
-    Class.countDocuments({ status: 'active' }),
-    TutorialModel.countDocuments(),
-    FeePayment.find({ status: 'paid' }).select('amount payment_month').lean(),
-    FeePayment.find({ status: 'paid' })
+    Student.countDocuments(workspaceFilter(context, { status: 'active' })),
+    User.countDocuments(workspaceFilter(context, { role: 'teacher' })),
+    Class.countDocuments(workspaceFilter(context, { status: 'active' })),
+    TutorialModel.countDocuments(workspaceFilter(context, {})),
+    FeePayment.find(workspaceFilter(context, { status: 'paid' })).select('amount payment_month').lean(),
+    FeePayment.find(workspaceFilter(context, { status: 'paid' }))
       .sort({ created_at: -1 })
       .limit(5)
       .populate('student_id', 'full_name')
       .lean({ virtuals: true }),
-    Attendance.find({ date: { $gte: thirtyDaysAgoKey } })
+    Attendance.find(workspaceFilter(context, { date: { $gte: thirtyDaysAgoKey } }))
       .select('date status')
       .sort({ date: 1 })
       .lean(),
-    Class.find({ status: 'active' }).select('class_name class_code').lean({ virtuals: true }),
-    FeePayment.find({ status: 'pending', due_date: { $lt: today } })
+    Class.find(workspaceFilter(context, { status: 'active' })).select('class_name class_code').lean({ virtuals: true }),
+    FeePayment.find(workspaceFilter(context, { status: { $in: ['pending', 'overdue'] }, due_date: { $lt: today } }))
       .sort({ due_date: 1 })
       .limit(10)
       .populate('student_id', 'full_name')
@@ -105,8 +107,10 @@ export async function getDashboardData(): Promise<FullDashboardData> {
   const topClasses: TopClass[] = await Promise.all(
     (classes as any[]).slice(0, 5).map(async (classItem) => {
       const [enrollCount, classAttendance] = await Promise.all([
-        Enrollment.countDocuments({ class_id: classItem._id, status: 'active' }),
-        Attendance.find({ class_id: classItem._id, date: { $gte: thirtyDaysAgoKey } }).select('status').lean(),
+        Enrollment.countDocuments(workspaceFilter(context, { class_id: classItem._id, status: 'active' })),
+        Attendance.find(workspaceFilter(context, { class_id: classItem._id, date: { $gte: thirtyDaysAgoKey } }))
+          .select('status')
+          .lean(),
       ]);
       const total = (classAttendance as any[]).length;
       const present = (classAttendance as any[]).filter((attendance) => attendance.status === 'present' || attendance.status === 'late').length;

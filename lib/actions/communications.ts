@@ -2,12 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import connectDB from '@/lib/mongodb/client';
+import Student from '@/lib/mongodb/models/Student';
+import Class from '@/lib/mongodb/models/Class';
 import mongoose, { Schema, Model } from 'mongoose';
-import { getCurrentUser } from '@/lib/auth/auth';
+import { requireWorkspaceContext, workspaceFilter, workspaceValue } from '@/lib/saas/workspace';
 
-// Inline Communication schema (not a core entity, no separate model file needed)
 interface ICommunication {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   recipient_type: 'student' | 'class' | 'all';
   recipient_id?: string;
   channel: 'email' | 'sms' | 'both';
@@ -21,6 +23,7 @@ interface ICommunication {
 
 const CommunicationSchema = new Schema<ICommunication>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     recipient_type: { type: String, enum: ['student', 'class', 'all'], required: true },
     recipient_id: { type: String },
     channel: { type: String, enum: ['email', 'sms', 'both'], required: true },
@@ -54,35 +57,50 @@ export type CreateCommunicationInput = Omit<CommunicationType, 'id' | 'created_a
 
 export async function getCommunications() {
   await connectDB();
-  const comms = await Communication.find({})
+  const context = await requireWorkspaceContext();
+  const communications = await Communication.find(workspaceFilter(context, {}))
     .sort({ created_at: -1 })
     .populate('created_by', 'full_name')
     .lean({ virtuals: true });
 
-  return (comms as any[]).map((c) => ({
-    ...c,
-    id: c._id.toString(),
-    profiles: c.created_by ? { full_name: c.created_by.full_name } : undefined,
+  return (communications as any[]).map((communication) => ({
+    ...communication,
+    id: communication._id.toString(),
+    profiles: communication.created_by ? { full_name: communication.created_by.full_name } : undefined,
   })) as CommunicationType[];
 }
 
 export async function createCommunication(input: Partial<CreateCommunicationInput>): Promise<{ success: boolean; error?: string }> {
   await connectDB();
-  const user = await getCurrentUser();
-  if (!user) return { success: false, error: 'Unauthorized' };
+  const context = await requireWorkspaceContext();
+
+  if (!input.recipient_type || !input.channel || !input.message?.trim()) {
+    return { success: false, error: 'Recipient, channel, and message are required.' };
+  }
+
+  if (input.recipient_type !== 'all') {
+    if (!input.recipient_id || !mongoose.isValidObjectId(input.recipient_id)) {
+      return { success: false, error: 'A valid recipient is required.' };
+    }
+
+    const recipientExists = input.recipient_type === 'student'
+      ? await Student.exists(workspaceFilter(context, { _id: input.recipient_id }))
+      : await Class.exists(workspaceFilter(context, { _id: input.recipient_id }));
+
+    if (!recipientExists) return { success: false, error: 'Recipient does not belong to this workspace.' };
+  }
 
   try {
-    const communicationData = {
+    await Communication.create({
+      workspace_id: workspaceValue(context),
       recipient_type: input.recipient_type,
       recipient_id: input.recipient_id ?? undefined,
       channel: input.channel,
-      subject: input.subject ?? undefined,
-      message: input.message,
-      status: 'sent' as const,
-      created_by: user.id,
-      sent_at: new Date(),
-    };
-    await Communication.create(communicationData);
+      subject: input.subject?.trim() || undefined,
+      message: input.message.trim(),
+      status: 'pending',
+      created_by: context.user.id,
+    });
     revalidatePath('/communications');
     return { success: true };
   } catch (error: any) {

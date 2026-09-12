@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface INotificationPreference extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   user_id: mongoose.Types.ObjectId;
   email_notifications: boolean;
   sms_notifications: boolean;
@@ -17,6 +18,7 @@ export interface INotificationPreference extends Document {
 
 const NotificationPreferenceSchema = new Schema<INotificationPreference>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     email_notifications: { type: Boolean, default: true },
     sms_notifications: { type: Boolean, default: false },

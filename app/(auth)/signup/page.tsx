@@ -9,15 +9,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 const benefits = [
-  'Unlimited students and classes',
-  '14-day free trial, no credit card required',
-  'Full access to all premium features',
+  'Professional plan free for 14 days',
+  'Up to 500 active students during the trial',
+  'Attendance, payments, assessments and multi-branch operations',
 ];
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [workspaceName, setWorkspaceName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -31,7 +32,12 @@ export default function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password, full_name: fullName, role: 'admin' }),
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName,
+          workspace_name: workspaceName || undefined,
+        }),
       });
 
       const raw = await res.text();
@@ -45,18 +51,18 @@ export default function SignupPage() {
       if (!res.ok) {
         toast({
           variant: 'destructive',
-          title: 'Error',
+          title: 'Could not create workspace',
           description: data.error || 'Signup failed',
         });
         return;
       }
 
       toast({
-        title: 'Account created! 🎉',
-        description: 'You are now logged in.',
+        title: 'Workspace created',
+        description: 'Your Professional trial is ready.',
       });
       window.location.assign('/dashboard');
-    } catch (error) {
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -70,15 +76,14 @@ export default function SignupPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Create your account</h2>
-        <p className="text-muted-foreground">Start managing your institute in minutes</p>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Create your workspace</h2>
+        <p className="text-muted-foreground">Set up your education operations workspace in minutes.</p>
       </div>
 
-      {/* Benefits */}
       <div className="space-y-2">
-        {benefits.map((benefit, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-zinc-800 flex-shrink-0" />
+        {benefits.map((benefit) => (
+          <div key={benefit} className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-zinc-800 flex-shrink-0 dark:text-zinc-200" />
             <span className="text-muted-foreground">{benefit}</span>
           </div>
         ))}
@@ -86,7 +91,7 @@ export default function SignupPage() {
 
       <form onSubmit={handleSignup} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
+          <Label htmlFor="fullName" className="text-sm font-medium">Your name</Label>
           <Input
             id="fullName"
             type="text"
@@ -97,8 +102,22 @@ export default function SignupPage() {
             className="h-11 bg-white dark:bg-zinc-900 border-border/50 focus-visible:ring-primary/30"
           />
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+          <Label htmlFor="workspaceName" className="text-sm font-medium">Institute / workspace name</Label>
+          <Input
+            id="workspaceName"
+            type="text"
+            placeholder="Bright Minds Academy"
+            value={workspaceName}
+            onChange={(e) => setWorkspaceName(e.target.value)}
+            className="h-11 bg-white dark:bg-zinc-900 border-border/50 focus-visible:ring-primary/30"
+          />
+          <p className="text-xs text-muted-foreground">You can add branches and team members after signup.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium">Work email</Label>
           <Input
             id="email"
             type="email"
@@ -109,6 +128,7 @@ export default function SignupPage() {
             className="h-11 bg-white dark:bg-zinc-900 border-border/50 focus-visible:ring-primary/30"
           />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium">Password</Label>
           <div className="relative">
@@ -118,7 +138,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
               className="h-11 pr-10 bg-white dark:bg-zinc-900 border-border/50 focus-visible:ring-primary/30"
             />
             <Button
@@ -127,21 +147,22 @@ export default function SignupPage() {
               size="icon"
               className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+          <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
         </div>
 
         <Button type="submit" className="w-full h-11 text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating account...
+              Creating workspace...
             </>
           ) : (
-            'Create Account'
+            'Start 14-day trial'
           )}
         </Button>
 
@@ -163,7 +184,7 @@ export default function SignupPage() {
 
       <Link href="/login" className="block">
         <Button variant="outline" className="w-full h-11 text-base font-medium border-border/50 hover:bg-muted/50">
-          Sign In
+          Sign in
         </Button>
       </Link>
     </div>

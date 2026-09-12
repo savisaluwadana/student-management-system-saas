@@ -5,10 +5,9 @@ import FeePayment from '@/lib/mongodb/models/FeePayment';
 import AttendanceModel from '@/lib/mongodb/models/Attendance';
 import Grade from '@/lib/mongodb/models/Grade';
 import Assessment from '@/lib/mongodb/models/Assessment';
-import mongoose from 'mongoose';
 import { format } from 'date-fns';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
-// ---- Types (unchanged) ----
 export interface FinancialReport { monthlyRevenue: MonthlyRevenue[]; paymentStats: PaymentStats; defaulters: Defaulter[]; revenueByClass: RevenueByClass[]; }
 export interface MonthlyRevenue { month: string; revenue: number; payments: number; }
 export interface PaymentStats { totalRevenue: number; paidAmount: number; pendingAmount: number; overdueAmount: number; totalPayments: number; }
@@ -25,72 +24,72 @@ export interface TopPerformer { student_id: string; student_name: string; studen
 export interface ClassPerformance { class_name: string; average_score: number; assessments_count: number; students_count: number; highest_score: number; lowest_score: number; }
 export interface AssessmentStats { totalAssessments: number; totalGrades: number; averageScore: number; highestScore: number; lowestScore: number; }
 
+function dateRange(startDate?: string, endDate?: string) {
+  if (!startDate || !endDate) return undefined;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return { $gte: start, $lte: end };
+}
+
 export async function getFinancialReport(startDate?: string, endDate?: string): Promise<FinancialReport> {
   await connectDB();
-
+  const context = await requireWorkspaceContext();
   try {
-    const filter: any = {};
-    if (startDate && endDate) filter.created_at = { $gte: new Date(startDate), $lte: new Date(endDate) };
-
-    const payments = await FeePayment.find(filter)
+    const range = dateRange(startDate, endDate);
+    const payments = await FeePayment.find(workspaceFilter(context, range ? { created_at: range } : {}))
       .sort({ created_at: -1 })
       .populate('student_id', 'id full_name student_code')
       .populate('class_id', 'class_name')
       .lean({ virtuals: true });
 
-    // Monthly revenue
-    const monthsMap = new Map<string, { revenue: number; payments: number }>();
-    (payments as any[]).forEach((p) => {
-      const key = format(new Date(p.created_at), 'yyyy-MM');
-      if (!monthsMap.has(key)) monthsMap.set(key, { revenue: 0, payments: 0 });
-      const stats = monthsMap.get(key)!;
-      if (p.status === 'paid') stats.revenue += p.amount || 0;
-      stats.payments += 1;
-    });
-    const monthlyRevenue: MonthlyRevenue[] = Array.from(monthsMap.entries())
-      .map(([month, data]) => ({ month, revenue: data.revenue, payments: data.payments }))
-      .sort((a, b) => a.month.localeCompare(b.month));
-
-    // Payment stats
-    const totalRevenue = (payments as any[]).reduce((s, p) => s + (p.amount || 0), 0);
-    const paidAmount = (payments as any[]).filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
-    const pendingAmount = (payments as any[]).filter((p) => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
-    const overdueAmount = (payments as any[]).filter((p) => p.status === 'overdue').reduce((s, p) => s + p.amount, 0);
-    const paymentStats: PaymentStats = { totalRevenue, paidAmount, pendingAmount, overdueAmount, totalPayments: payments.length };
-
-    // Defaulters (overdue payments grouped by student)
+    const months = new Map<string, { revenue: number; payments: number }>();
     const defaultersMap = new Map<string, Defaulter>();
-    (payments as any[]).filter((p) => p.status === 'overdue').forEach((p) => {
-      const sid = p.student_id?._id?.toString();
-      if (!defaultersMap.has(sid)) {
-        defaultersMap.set(sid, {
-          student_id: sid,
-          student_name: p.student_id?.full_name || 'Unknown',
-          student_code: p.student_id?.student_code || 'N/A',
-          total_pending: 0,
-          overdue_count: 0,
-        });
+    const classMap = new Map<string, { revenue: number; students: Set<string> }>();
+    let paidAmount = 0;
+    let pendingAmount = 0;
+    let overdueAmount = 0;
+
+    for (const payment of payments as any[]) {
+      const amount = Number(payment.amount || 0);
+      const month = format(new Date(payment.created_at), 'yyyy-MM');
+      if (!months.has(month)) months.set(month, { revenue: 0, payments: 0 });
+      months.get(month)!.payments += 1;
+
+      if (payment.status === 'paid') {
+        paidAmount += amount;
+        months.get(month)!.revenue += amount;
+        const className = payment.class_id?.class_name || 'Unassigned';
+        if (!classMap.has(className)) classMap.set(className, { revenue: 0, students: new Set() });
+        classMap.get(className)!.revenue += amount;
+        if (payment.student_id?._id) classMap.get(className)!.students.add(payment.student_id._id.toString());
+      } else if (payment.status === 'overdue') {
+        overdueAmount += amount;
+        const studentId = payment.student_id?._id?.toString();
+        if (studentId) {
+          if (!defaultersMap.has(studentId)) {
+            defaultersMap.set(studentId, {
+              student_id: studentId,
+              student_name: payment.student_id?.full_name || 'Unknown',
+              student_code: payment.student_id?.student_code || 'N/A',
+              total_pending: 0,
+              overdue_count: 0,
+            });
+          }
+          defaultersMap.get(studentId)!.total_pending += amount;
+          defaultersMap.get(studentId)!.overdue_count += 1;
+        }
+      } else if (payment.status === 'pending' || payment.status === 'unpaid') {
+        pendingAmount += amount;
       }
-      const d = defaultersMap.get(sid)!;
-      d.total_pending += p.amount;
-      d.overdue_count += 1;
-    });
-    const defaulters = Array.from(defaultersMap.values()).sort((a, b) => b.total_pending - a.total_pending).slice(0, 20);
+    }
 
-    // Revenue by class
-    const revByClass = new Map<string, { revenue: number; students: Set<string> }>();
-    (payments as any[]).filter((p) => p.status === 'paid').forEach((p) => {
-      const className = p.class_id?.class_name || 'Unknown';
-      if (!revByClass.has(className)) revByClass.set(className, { revenue: 0, students: new Set() });
-      const r = revByClass.get(className)!;
-      r.revenue += p.amount;
-      if (p.student_id?._id) r.students.add(p.student_id._id.toString());
-    });
-    const revenueByClass: RevenueByClass[] = Array.from(revByClass.entries())
-      .map(([class_name, data]) => ({ class_name, revenue: data.revenue, students: data.students.size }))
-      .sort((a, b) => b.revenue - a.revenue);
-
-    return { monthlyRevenue, paymentStats, defaulters, revenueByClass };
+    return {
+      monthlyRevenue: Array.from(months.entries()).map(([month, data]) => ({ month, ...data })).sort((a, b) => a.month.localeCompare(b.month)),
+      paymentStats: { totalRevenue: paidAmount, paidAmount, pendingAmount, overdueAmount, totalPayments: payments.length },
+      defaulters: Array.from(defaultersMap.values()).sort((a, b) => b.total_pending - a.total_pending).slice(0, 20),
+      revenueByClass: Array.from(classMap.entries()).map(([class_name, data]) => ({ class_name, revenue: data.revenue, students: data.students.size })).sort((a, b) => b.revenue - a.revenue),
+    };
   } catch (error) {
     console.error('Error generating financial report:', error);
     return { monthlyRevenue: [], paymentStats: { totalRevenue: 0, paidAmount: 0, pendingAmount: 0, overdueAmount: 0, totalPayments: 0 }, defaulters: [], revenueByClass: [] };
@@ -99,72 +98,58 @@ export async function getFinancialReport(startDate?: string, endDate?: string): 
 
 export async function getAttendanceReport(startDate?: string, endDate?: string): Promise<AttendanceReport> {
   await connectDB();
-
+  const context = await requireWorkspaceContext();
   try {
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     if (startDate && endDate) filter.date = { $gte: startDate, $lte: endDate };
-
-    const records = await AttendanceModel.find(filter)
+    const records = await AttendanceModel.find(workspaceFilter(context, filter))
       .sort({ date: -1 })
       .populate('student_id', 'id full_name student_code')
       .populate('class_id', 'class_name')
       .lean({ virtuals: true });
 
-    // Daily stats
     const dailyMap = new Map<string, DailyAttendanceStats>();
-    (records as any[]).forEach((r) => {
-      if (!dailyMap.has(r.date)) dailyMap.set(r.date, { date: r.date, present: 0, absent: 0, late: 0, total: 0, rate: 0 });
-      const s = dailyMap.get(r.date)!;
-      s.total++;
-      if (r.status === 'present') s.present++;
-      else if (r.status === 'absent') s.absent++;
-      else if (r.status === 'late') s.late++;
-    });
-    const dailyStats = Array.from(dailyMap.values())
-      .map((s) => ({ ...s, rate: s.total > 0 ? (s.present / s.total) * 100 : 0 }))
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 30);
-
-    // Class comparison
-    const classMap = new Map<string, { total_sessions: number; present: number; absent: number }>();
-    (records as any[]).forEach((r) => {
-      const className = r.class_id?.class_name || 'Unknown';
-      if (!classMap.has(className)) classMap.set(className, { total_sessions: 0, present: 0, absent: 0 });
-      const s = classMap.get(className)!;
-      s.total_sessions++;
-      if (r.status === 'present') s.present++;
-      else if (r.status === 'absent') s.absent++;
-    });
-    const classComparison: ClassAttendanceComparison[] = Array.from(classMap.entries())
-      .map(([class_name, s]) => ({ class_name, total_sessions: s.total_sessions, average_attendance: s.total_sessions > 0 ? (s.present / s.total_sessions) * 100 : 0, present_count: s.present, absent_count: s.absent }))
-      .sort((a, b) => b.average_attendance - a.average_attendance);
-
-    // Risk students
+    const classMap = new Map<string, { total: number; present: number; absent: number }>();
     const studentMap = new Map<string, { name: string; code: string; total: number; absences: number; classes: Set<string> }>();
-    (records as any[]).forEach((r) => {
-      const sid = r.student_id?._id?.toString();
-      if (!studentMap.has(sid)) studentMap.set(sid, { name: r.student_id?.full_name || 'Unknown', code: r.student_id?.student_code || 'N/A', total: 0, absences: 0, classes: new Set() });
-      const s = studentMap.get(sid)!;
-      s.total++;
-      if (r.status === 'absent') s.absences++;
-      if (r.class_id?.class_name) s.classes.add(r.class_id.class_name);
-    });
-    const riskStudents: RiskStudent[] = Array.from(studentMap.entries())
-      .map(([student_id, s]) => ({ student_id, student_name: s.name, student_code: s.code, total_absences: s.absences, attendance_rate: s.total > 0 ? ((s.total - s.absences) / s.total) * 100 : 0, classes_enrolled: s.classes.size }))
-      .filter((s) => s.attendance_rate < 75)
-      .sort((a, b) => a.attendance_rate - b.attendance_rate)
-      .slice(0, 20);
+
+    for (const record of records as any[]) {
+      if (!dailyMap.has(record.date)) dailyMap.set(record.date, { date: record.date, present: 0, absent: 0, late: 0, total: 0, rate: 0 });
+      const daily = dailyMap.get(record.date)!;
+      daily.total += 1;
+      if (record.status === 'present') daily.present += 1;
+      else if (record.status === 'absent') daily.absent += 1;
+      else if (record.status === 'late') daily.late += 1;
+
+      const className = record.class_id?.class_name || 'Unknown';
+      if (!classMap.has(className)) classMap.set(className, { total: 0, present: 0, absent: 0 });
+      const classStats = classMap.get(className)!;
+      classStats.total += 1;
+      if (record.status === 'present' || record.status === 'late') classStats.present += 1;
+      if (record.status === 'absent') classStats.absent += 1;
+
+      const studentId = record.student_id?._id?.toString();
+      if (studentId) {
+        if (!studentMap.has(studentId)) studentMap.set(studentId, { name: record.student_id?.full_name || 'Unknown', code: record.student_id?.student_code || 'N/A', total: 0, absences: 0, classes: new Set() });
+        const stats = studentMap.get(studentId)!;
+        stats.total += 1;
+        if (record.status === 'absent') stats.absences += 1;
+        if (record.class_id?.class_name) stats.classes.add(record.class_id.class_name);
+      }
+    }
+
+    const dailyStats = Array.from(dailyMap.values()).map((stats) => ({ ...stats, rate: stats.total ? ((stats.present + stats.late) / stats.total) * 100 : 0 })).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+    const classComparison = Array.from(classMap.entries()).map(([class_name, stats]) => ({ class_name, total_sessions: stats.total, average_attendance: stats.total ? (stats.present / stats.total) * 100 : 0, present_count: stats.present, absent_count: stats.absent })).sort((a, b) => b.average_attendance - a.average_attendance);
+    const riskStudents = Array.from(studentMap.entries()).map(([student_id, stats]) => ({ student_id, student_name: stats.name, student_code: stats.code, total_absences: stats.absences, attendance_rate: stats.total ? ((stats.total - stats.absences) / stats.total) * 100 : 0, classes_enrolled: stats.classes.size })).filter((student) => student.attendance_rate < 75).sort((a, b) => a.attendance_rate - b.attendance_rate).slice(0, 20);
 
     const totalSessions = records.length;
-    const totalPresent = (records as any[]).filter((r) => r.status === 'present').length;
-    const totalAbsent = (records as any[]).filter((r) => r.status === 'absent').length;
-    const totalLate = (records as any[]).filter((r) => r.status === 'late').length;
-
+    const totalPresent = (records as any[]).filter((record) => record.status === 'present').length;
+    const totalAbsent = (records as any[]).filter((record) => record.status === 'absent').length;
+    const totalLate = (records as any[]).filter((record) => record.status === 'late').length;
     return {
       dailyStats,
       classComparison,
       riskStudents,
-      overallStats: { totalSessions, averageAttendanceRate: totalSessions > 0 ? (totalPresent / totalSessions) * 100 : 0, totalPresent, totalAbsent, totalLate },
+      overallStats: { totalSessions, averageAttendanceRate: totalSessions ? ((totalPresent + totalLate) / totalSessions) * 100 : 0, totalPresent, totalAbsent, totalLate },
     };
   } catch (error) {
     console.error('Error generating attendance report:', error);
@@ -174,71 +159,51 @@ export async function getAttendanceReport(startDate?: string, endDate?: string):
 
 export async function getAcademicReport(startDate?: string, endDate?: string): Promise<AcademicReport> {
   await connectDB();
-
+  const context = await requireWorkspaceContext();
   try {
-    const grades = await Grade.find({})
-      .sort({ created_at: -1 })
-      .populate('student_id', 'id full_name student_code')
-      .populate({ path: 'assessment_id', select: 'title max_score date class_id', populate: { path: 'class_id', select: 'class_name' } })
-      .lean({ virtuals: true });
+    const assessmentFilter: Record<string, unknown> = {};
+    if (startDate && endDate) assessmentFilter.date = { $gte: startDate, $lte: endDate };
+    const assessments = await Assessment.find(workspaceFilter(context, assessmentFilter)).select('_id').lean();
+    const assessmentIds = (assessments as any[]).map((assessment) => assessment._id);
+    const grades = assessmentIds.length
+      ? await Grade.find(workspaceFilter(context, { assessment_id: { $in: assessmentIds } }))
+          .populate('student_id', 'id full_name student_code')
+          .populate({ path: 'assessment_id', select: 'title max_score date class_id', populate: { path: 'class_id', select: 'class_name' } })
+          .lean({ virtuals: true })
+      : [];
 
-    const gradeCategories: Record<string, number> = { 'A (90-100)': 0, 'B (80-89)': 0, 'C (70-79)': 0, 'D (60-69)': 0, 'F (0-59)': 0 };
-    const scoredGrades = (grades as any[]).filter((g) => g.score != null && g.assessment_id?.max_score);
+    const categories: Record<string, number> = { 'A (90-100)': 0, 'B (80-89)': 0, 'C (70-79)': 0, 'D (60-69)': 0, 'F (0-59)': 0 };
+    const scored = (grades as any[]).filter((grade) => grade.score != null && Number(grade.assessment_id?.max_score) > 0);
+    const students = new Map<string, { name: string; code: string; scores: number[] }>();
+    const classes = new Map<string, { scores: number[]; students: Set<string>; assessments: Set<string> }>();
+    const allScores: number[] = [];
 
-    scoredGrades.forEach((g) => {
-      const pct = (g.score / g.assessment_id.max_score) * 100;
-      if (pct >= 90) gradeCategories['A (90-100)']++;
-      else if (pct >= 80) gradeCategories['B (80-89)']++;
-      else if (pct >= 70) gradeCategories['C (70-79)']++;
-      else if (pct >= 60) gradeCategories['D (60-69)']++;
-      else gradeCategories['F (0-59)']++;
-    });
-    const gradeDistribution: GradeDistribution[] = Object.entries(gradeCategories).map(([grade, count]) => ({
-      grade, count, percentage: grades.length > 0 ? (count / grades.length) * 100 : 0,
-    }));
+    for (const grade of scored) {
+      const pct = (Number(grade.score) / Number(grade.assessment_id.max_score)) * 100;
+      allScores.push(pct);
+      if (pct >= 90) categories['A (90-100)'] += 1;
+      else if (pct >= 80) categories['B (80-89)'] += 1;
+      else if (pct >= 70) categories['C (70-79)'] += 1;
+      else if (pct >= 60) categories['D (60-69)'] += 1;
+      else categories['F (0-59)'] += 1;
 
-    // Top performers
-    const studentMap = new Map<string, { name: string; code: string; total_score: number; count: number }>();
-    scoredGrades.forEach((g) => {
-      const sid = g.student_id?._id?.toString();
-      if (!studentMap.has(sid)) studentMap.set(sid, { name: g.student_id?.full_name || 'Unknown', code: g.student_id?.student_code || 'N/A', total_score: 0, count: 0 });
-      const s = studentMap.get(sid)!;
-      s.total_score += (g.score / g.assessment_id.max_score) * 100;
-      s.count++;
-    });
-    const topPerformers: TopPerformer[] = Array.from(studentMap.entries())
-      .map(([student_id, s]) => ({ student_id, student_name: s.name, student_code: s.code, average_score: s.count > 0 ? s.total_score / s.count : 0, assessments_taken: s.count }))
-      .filter((p) => p.assessments_taken >= 3)
-      .sort((a, b) => b.average_score - a.average_score)
-      .slice(0, 10);
+      const sid = grade.student_id?._id?.toString();
+      if (sid) {
+        if (!students.has(sid)) students.set(sid, { name: grade.student_id?.full_name || 'Unknown', code: grade.student_id?.student_code || 'N/A', scores: [] });
+        students.get(sid)!.scores.push(pct);
+      }
+      const className = grade.assessment_id?.class_id?.class_name || 'Unknown';
+      if (!classes.has(className)) classes.set(className, { scores: [], students: new Set(), assessments: new Set() });
+      const classStats = classes.get(className)!;
+      classStats.scores.push(pct);
+      if (sid) classStats.students.add(sid);
+      if (grade.assessment_id?._id) classStats.assessments.add(grade.assessment_id._id.toString());
+    }
 
-    // Class performance
-    const classMap = new Map<string, { scores: number[]; students: Set<string> }>();
-    scoredGrades.forEach((g) => {
-      const className = g.assessment_id?.class_id?.class_name || 'Unknown';
-      if (!classMap.has(className)) classMap.set(className, { scores: [], students: new Set() });
-      const s = classMap.get(className)!;
-      s.scores.push((g.score / g.assessment_id.max_score) * 100);
-      s.students.add(g.student_id?._id?.toString());
-    });
-    const classPerformance: ClassPerformance[] = Array.from(classMap.entries())
-      .map(([class_name, s]) => ({
-        class_name,
-        average_score: s.scores.length > 0 ? s.scores.reduce((a, b) => a + b, 0) / s.scores.length : 0,
-        assessments_count: s.scores.length, students_count: s.students.size,
-        highest_score: s.scores.length > 0 ? Math.max(...s.scores) : 0,
-        lowest_score: s.scores.length > 0 ? Math.min(...s.scores) : 0,
-      }))
-      .sort((a, b) => b.average_score - a.average_score);
-
-    const allScores = scoredGrades.map((g) => (g.score / g.assessment_id.max_score) * 100);
-    const assessmentStats: AssessmentStats = {
-      totalAssessments: new Set(scoredGrades.map((g) => g.assessment_id?._id?.toString())).size,
-      totalGrades: grades.length,
-      averageScore: allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : 0,
-      highestScore: allScores.length > 0 ? Math.max(...allScores) : 0,
-      lowestScore: allScores.length > 0 ? Math.min(...allScores) : 0,
-    };
+    const gradeDistribution = Object.entries(categories).map(([grade, count]) => ({ grade, count, percentage: scored.length ? (count / scored.length) * 100 : 0 }));
+    const topPerformers = Array.from(students.entries()).map(([student_id, stats]) => ({ student_id, student_name: stats.name, student_code: stats.code, average_score: stats.scores.reduce((a, b) => a + b, 0) / stats.scores.length, assessments_taken: stats.scores.length })).filter((student) => student.assessments_taken >= 3).sort((a, b) => b.average_score - a.average_score).slice(0, 10);
+    const classPerformance = Array.from(classes.entries()).map(([class_name, stats]) => ({ class_name, average_score: stats.scores.reduce((a, b) => a + b, 0) / stats.scores.length, assessments_count: stats.assessments.size, students_count: stats.students.size, highest_score: Math.max(...stats.scores), lowest_score: Math.min(...stats.scores) })).sort((a, b) => b.average_score - a.average_score);
+    const assessmentStats = { totalAssessments: assessmentIds.length, totalGrades: grades.length, averageScore: allScores.length ? allScores.reduce((a, b) => a + b, 0) / allScores.length : 0, highestScore: allScores.length ? Math.max(...allScores) : 0, lowestScore: allScores.length ? Math.min(...allScores) : 0 };
 
     return { gradeDistribution, topPerformers, classPerformance, assessmentStats };
   } catch (error) {

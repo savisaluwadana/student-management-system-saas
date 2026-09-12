@@ -4,9 +4,10 @@ export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
 export interface IAttendance extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   class_id: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
-  date: string; // YYYY-MM-DD
+  date: string;
   status: AttendanceStatus;
   marked_by?: mongoose.Types.ObjectId;
   notes?: string;
@@ -16,6 +17,7 @@ export interface IAttendance extends Document {
 
 const AttendanceSchema = new Schema<IAttendance>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     class_id: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
     student_id: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
     date: { type: String, required: true },
@@ -34,7 +36,6 @@ AttendanceSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 
-// Unique constraint replicating Supabase's onConflict: 'class_id,student_id,date'
 AttendanceSchema.index({ class_id: 1, student_id: 1, date: 1 }, { unique: true });
 
 const Attendance: Model<IAttendance> = mongoose.models.Attendance || mongoose.model<IAttendance>('Attendance', AttendanceSchema);

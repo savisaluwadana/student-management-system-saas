@@ -12,11 +12,9 @@ export interface JWTPayload {
   email: string;
   role: 'admin' | 'teacher';
   full_name: string;
+  workspace_id?: string | null;
 }
 
-/**
- * Sign a JWT token for a user
- */
 export function signToken(payload: JWTPayload): string {
   const secret = getJwtSecret();
   if (!secret) {
@@ -25,9 +23,6 @@ export function signToken(payload: JWTPayload): string {
   return jwt.sign(payload, secret, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
 }
 
-/**
- * Verify a JWT token and return the payload, or null if invalid
- */
 export function verifyToken(token: string): JWTPayload | null {
   try {
     const secret = getJwtSecret();
@@ -38,9 +33,6 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
-/**
- * Get the current user from the auth_token cookie (Server Components / Server Actions)
- */
 export async function getCurrentUser(): Promise<JWTPayload | null> {
   try {
     const cookieStore = await cookies();
@@ -52,9 +44,6 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   }
 }
 
-/**
- * Get the auth token from the cookie store
- */
 export async function getToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();

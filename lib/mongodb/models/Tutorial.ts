@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ITutorial extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   title: string;
   description?: string;
   content_url?: string;
@@ -16,6 +17,7 @@ export interface ITutorial extends Document {
 
 const TutorialSchema = new Schema<ITutorial>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     title: { type: String, required: true },
     description: { type: String },
     content_url: { type: String },

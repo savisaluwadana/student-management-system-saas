@@ -1,11 +1,14 @@
 'use server';
 
+import { createHash, randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import connectDB from '@/lib/mongodb/client';
 import User from '@/lib/mongodb/models/User';
 import Class from '@/lib/mongodb/models/Class';
+import TeamInvite from '@/lib/mongodb/models/TeamInvite';
 import mongoose from 'mongoose';
-import * as bcrypt from 'bcryptjs';
+import { checkWorkspaceLimit } from '@/lib/actions/billing';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
 export type Teacher = {
   id: string;
@@ -17,18 +20,34 @@ export type Teacher = {
   classes?: { id: string; class_name: string; class_code: string }[];
 };
 
+export type PendingTeacherInvite = {
+  id: string;
+  email: string;
+  expires_at: string;
+  created_at: string;
+};
+
 export async function getTeachers(): Promise<Teacher[]> {
   await connectDB();
+  const context = await requireWorkspaceContext();
 
-  const teachers = await User.find({ role: 'teacher' }).sort({ full_name: 1 }).lean({ virtuals: true });
+  const teachers = await User.find(workspaceFilter(context, { role: 'teacher' }))
+    .sort({ full_name: 1 })
+    .lean({ virtuals: true });
 
   const result = await Promise.all(
-    teachers.map(async (t: any) => {
-      const classes = await Class.find({ teacher_id: t._id }).select('id class_name class_code').lean({ virtuals: true });
+    teachers.map(async (teacher: any) => {
+      const classes = await Class.find(workspaceFilter(context, { teacher_id: teacher._id }))
+        .select('id class_name class_code')
+        .lean({ virtuals: true });
       return {
-        ...t,
-        id: t._id.toString(),
-        classes: classes.map((c: any) => ({ id: c._id.toString(), class_name: c.class_name, class_code: c.class_code })),
+        ...teacher,
+        id: teacher._id.toString(),
+        classes: classes.map((classItem: any) => ({
+          id: classItem._id.toString(),
+          class_name: classItem.class_name,
+          class_code: classItem.class_code,
+        })),
       };
     })
   );
@@ -36,21 +55,48 @@ export async function getTeachers(): Promise<Teacher[]> {
   return result as unknown as Teacher[];
 }
 
+export async function getPendingTeacherInvites(): Promise<PendingTeacherInvite[]> {
+  await connectDB();
+  const context = await requireWorkspaceContext({ admin: true });
+  if (!context.workspaceObjectId) return [];
+
+  const invites = await TeamInvite.find({
+    workspace_id: context.workspaceObjectId,
+    role: 'teacher',
+    accepted_at: { $exists: false },
+    revoked_at: { $exists: false },
+    expires_at: { $gt: new Date() },
+  }).sort({ created_at: -1 }).lean();
+
+  return (invites as any[]).map((invite) => ({
+    id: invite._id.toString(),
+    email: invite.email,
+    expires_at: new Date(invite.expires_at).toISOString(),
+    created_at: new Date(invite.created_at).toISOString(),
+  }));
+}
+
 export async function getTeacherById(id: string): Promise<Teacher | null> {
   await connectDB();
-
+  const context = await requireWorkspaceContext();
   if (!mongoose.isValidObjectId(id)) return null;
 
-  const teacher = await User.findOne({ _id: id, role: 'teacher' }).lean({ virtuals: true });
+  const teacher = await User.findOne(workspaceFilter(context, { _id: id, role: 'teacher' })).lean({ virtuals: true });
   if (!teacher) return null;
 
-  const t = teacher as any;
-  const classes = await Class.find({ teacher_id: t._id }).select('id class_name class_code').lean({ virtuals: true });
+  const data = teacher as any;
+  const classes = await Class.find(workspaceFilter(context, { teacher_id: data._id }))
+    .select('id class_name class_code')
+    .lean({ virtuals: true });
 
   return {
-    ...t,
-    id: t._id.toString(),
-    classes: classes.map((c: any) => ({ id: c._id.toString(), class_name: c.class_name, class_code: c.class_code })),
+    ...data,
+    id: data._id.toString(),
+    classes: classes.map((classItem: any) => ({
+      id: classItem._id.toString(),
+      class_name: classItem.class_name,
+      class_code: classItem.class_code,
+    })),
   } as unknown as Teacher;
 }
 
@@ -59,34 +105,89 @@ export async function createTeacher(data: {
   email: string;
   phone?: string;
   class_ids?: string[];
-}) {
+}): Promise<{ success: boolean; error?: string; invite_url?: string }> {
   await connectDB();
+  const context = await requireWorkspaceContext({ admin: true });
 
   try {
-    const existing = await User.findOne({ email: data.email.toLowerCase() });
-    if (existing) {
-      return { success: false, error: 'A user with this email already exists.' };
+    if (!context.workspaceObjectId) {
+      return { success: false, error: 'This account must be upgraded to a workspace before inviting team members. Sign out and sign in again to run the safe migration.' };
     }
 
-    const tempPassword = 'TempPassword123!';
-    const teacher = await User.create({
-      email: data.email.toLowerCase(),
-      password: tempPassword,
-      full_name: data.full_name,
-      phone: data.phone,
-      role: 'teacher',
+    const normalizedEmail = data.email.trim().toLowerCase();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) return { success: false, error: 'A user with this email already exists.' };
+
+    if (data.class_ids?.length) {
+      if (data.class_ids.some((id) => !mongoose.isValidObjectId(id))) {
+        return { success: false, error: 'One or more class IDs are invalid.' };
+      }
+      const classCount = await Class.countDocuments(workspaceFilter(context, { _id: { $in: data.class_ids } }));
+      if (classCount !== new Set(data.class_ids).size) {
+        return { success: false, error: 'One or more selected classes do not belong to this workspace.' };
+      }
+    }
+
+    const limit = await checkWorkspaceLimit('teamMembers');
+    const pendingInvites = await TeamInvite.countDocuments({
+      workspace_id: context.workspaceObjectId,
+      accepted_at: { $exists: false },
+      revoked_at: { $exists: false },
+      expires_at: { $gt: new Date() },
     });
-
-    if (data.class_ids && data.class_ids.length > 0) {
-      await Class.updateMany({ _id: { $in: data.class_ids } }, { teacher_id: teacher._id });
+    if (limit.limit !== null && limit.current + pendingInvites >= limit.limit) {
+      return { success: false, error: `Your plan allows ${limit.limit} team members, including pending invitations.` };
     }
 
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await TeamInvite.findOneAndUpdate(
+      {
+        workspace_id: context.workspaceObjectId,
+        email: normalizedEmail,
+        role: 'teacher',
+        accepted_at: { $exists: false },
+        revoked_at: { $exists: false },
+      },
+      {
+        token_hash: tokenHash,
+        invited_by: context.user.id,
+        expires_at: expiresAt,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
     revalidatePath('/teachers');
-    return { success: true };
+    revalidatePath('/billing');
+    return { success: true, invite_url: `${appUrl}/invite/${token}` };
   } catch (error: any) {
-    console.error('Error creating teacher:', error);
+    console.error('Error creating teacher invitation:', error);
     return { success: false, error: error.message };
   }
+}
+
+export async function revokeTeacherInvite(id: string) {
+  await connectDB();
+  const context = await requireWorkspaceContext({ admin: true });
+  if (!context.workspaceObjectId || !mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid invitation.' };
+
+  const invite = await TeamInvite.findOneAndUpdate(
+    {
+      _id: id,
+      workspace_id: context.workspaceObjectId,
+      accepted_at: { $exists: false },
+      revoked_at: { $exists: false },
+    },
+    { revoked_at: new Date() },
+    { new: true }
+  );
+  if (!invite) return { success: false, error: 'Invitation not found.' };
+  revalidatePath('/teachers');
+  revalidatePath('/billing');
+  return { success: true };
 }
 
 export async function updateTeacher(
@@ -94,23 +195,39 @@ export async function updateTeacher(
   data: { full_name?: string; email?: string; phone?: string; class_ids?: string[] }
 ) {
   await connectDB();
-
+  const context = await requireWorkspaceContext({ admin: true });
   if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
 
   try {
-    const updateData: any = {};
+    if (data.class_ids?.length) {
+      if (data.class_ids.some((classId) => !mongoose.isValidObjectId(classId))) {
+        return { success: false, error: 'One or more class IDs are invalid.' };
+      }
+      const classCount = await Class.countDocuments(workspaceFilter(context, { _id: { $in: data.class_ids } }));
+      if (classCount !== new Set(data.class_ids).size) {
+        return { success: false, error: 'One or more selected classes do not belong to this workspace.' };
+      }
+    }
+
+    const updateData: Record<string, string> = {};
     if (data.full_name) updateData.full_name = data.full_name;
     if (data.email) updateData.email = data.email.toLowerCase();
     if (data.phone !== undefined) updateData.phone = data.phone;
 
-    await User.findByIdAndUpdate(id, updateData);
+    const teacher = await User.findOneAndUpdate(
+      workspaceFilter(context, { _id: id, role: 'teacher' }),
+      updateData,
+      { new: true }
+    );
+    if (!teacher) return { success: false, error: 'Teacher not found.' };
 
     if (data.class_ids !== undefined) {
-      // Remove teacher from all currently assigned classes
-      await Class.updateMany({ teacher_id: id }, { $unset: { teacher_id: 1 } });
-      // Assign to new class list
+      await Class.updateMany(workspaceFilter(context, { teacher_id: id }), { $unset: { teacher_id: 1 } });
       if (data.class_ids.length > 0) {
-        await Class.updateMany({ _id: { $in: data.class_ids } }, { teacher_id: id });
+        await Class.updateMany(
+          workspaceFilter(context, { _id: { $in: data.class_ids } }),
+          { teacher_id: teacher._id }
+        );
       }
     }
 
@@ -124,14 +241,17 @@ export async function updateTeacher(
 
 export async function deleteTeacher(id: string) {
   await connectDB();
-
+  const context = await requireWorkspaceContext({ admin: true });
   if (!mongoose.isValidObjectId(id)) return { success: false, error: 'Invalid ID' };
 
   try {
-    // Unassign from classes first
-    await Class.updateMany({ teacher_id: id }, { $unset: { teacher_id: 1 } });
-    await User.findByIdAndDelete(id);
+    const teacher = await User.findOne(workspaceFilter(context, { _id: id, role: 'teacher' }));
+    if (!teacher) return { success: false, error: 'Teacher not found.' };
+
+    await Class.updateMany(workspaceFilter(context, { teacher_id: id }), { $unset: { teacher_id: 1 } });
+    await User.deleteOne(workspaceFilter(context, { _id: id, role: 'teacher' }));
     revalidatePath('/teachers');
+    revalidatePath('/billing');
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting teacher:', error);

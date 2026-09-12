@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb/client';
 import User from '@/lib/mongodb/models/User';
 import { signToken } from '@/lib/auth/auth';
+import { migrateLegacyWorkspaceForAdmin } from '@/lib/saas/legacy';
 
 export async function POST(request: Request) {
   try {
@@ -23,8 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    // Find user and include password field (select: false by default)
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() }).select('+password');
 
     if (!user) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
@@ -39,19 +39,24 @@ export async function POST(request: Request) {
       isPasswordValid = await user.comparePassword(password);
     } catch (compareError) {
       console.error('Password compare failed:', compareError);
-      isPasswordValid = false;
     }
 
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    // Create JWT token
+    let workspaceId = user.workspace_id?.toString() || null;
+    if (!workspaceId && user.role === 'admin') {
+      const migratedWorkspaceId = await migrateLegacyWorkspaceForAdmin(user);
+      workspaceId = migratedWorkspaceId?.toString() || null;
+    }
+
     const token = signToken({
       id: user._id.toHexString(),
       email: user.email,
       role: user.role,
       full_name: user.full_name,
+      workspace_id: workspaceId,
     });
 
     const response = NextResponse.json({
@@ -61,15 +66,15 @@ export async function POST(request: Request) {
         email: user.email,
         full_name: user.full_name,
         role: user.role,
+        workspace_id: workspaceId,
       },
     });
 
-    // Set HttpOnly cookie
     response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 
@@ -81,11 +86,9 @@ export async function POST(request: Request) {
     if (message.includes('JWT_SECRET')) {
       return NextResponse.json({ error: 'Server misconfiguration: JWT_SECRET is not set' }, { status: 500 });
     }
-
     if (message.includes('MONGODB_URI')) {
       return NextResponse.json({ error: 'Server misconfiguration: MONGODB_URI is not set' }, { status: 500 });
     }
-
     if (
       message.includes('querySrv') ||
       message.includes('ENOTFOUND') ||
@@ -94,7 +97,6 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
     }
-
     if (message.toLowerCase().includes('authentication failed')) {
       return NextResponse.json({ error: 'Database authentication failed' }, { status: 500 });
     }

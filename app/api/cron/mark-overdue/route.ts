@@ -1,33 +1,21 @@
 import { NextResponse } from 'next/server';
-import { markOverduePayments } from '@/lib/actions/payments';
+import { runMarkOverduePayments } from '@/lib/saas/jobs';
 
 export async function POST(request: Request) {
   try {
-    // Verify CRON_SECRET
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await markOverduePayments();
-
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        message: `Marked ${result.count} payments as overdue`,
-        count: result.count,
-      });
-    } else {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
-    }
+    const result = await runMarkOverduePayments();
+    return NextResponse.json({
+      success: true,
+      message: `Marked ${result.updated} payments as overdue`,
+      count: result.updated,
+    });
   } catch (error) {
     console.error('Error in mark-overdue cron:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

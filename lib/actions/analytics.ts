@@ -8,6 +8,7 @@ import TutorialModel from '@/lib/mongodb/models/Tutorial';
 import Enrollment from '@/lib/mongodb/models/Enrollment';
 import Attendance from '@/lib/mongodb/models/Attendance';
 import FeePayment from '@/lib/mongodb/models/FeePayment';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
 export interface DashboardStats {
   totalStudents: number;
@@ -38,6 +39,7 @@ export interface OverduePayment {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   await connectDB();
+  const context = await requireWorkspaceContext();
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const thirtyDaysAgo = new Date();
@@ -45,69 +47,78 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   const [totalStudents, totalClasses, totalTeachers, totalTutorials, activeEnrollments, attendanceData, revenueData, pendingPayments] =
     await Promise.all([
-      Student.countDocuments({ status: 'active' }),
-      Class.countDocuments({ status: 'active' }),
-      User.countDocuments({ role: 'teacher' }),
-      TutorialModel.countDocuments(),
-      Enrollment.countDocuments({ status: 'active' }),
-      Attendance.find({ date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean(),
-      FeePayment.find({ status: 'paid', payment_month: { $gte: firstOfMonth.toISOString().split('T')[0] } }).select('amount').lean(),
-      FeePayment.countDocuments({ status: 'pending' }),
+      Student.countDocuments(workspaceFilter(context, { status: 'active' })),
+      Class.countDocuments(workspaceFilter(context, { status: 'active' })),
+      User.countDocuments(workspaceFilter(context, { role: 'teacher' })),
+      TutorialModel.countDocuments(workspaceFilter(context, {})),
+      Enrollment.countDocuments(workspaceFilter(context, { status: 'active' })),
+      Attendance.find(workspaceFilter(context, { date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } })).select('status').lean(),
+      FeePayment.find(workspaceFilter(context, { status: 'paid', payment_month: { $gte: firstOfMonth.toISOString().split('T')[0] } })).select('amount').lean(),
+      FeePayment.countDocuments(workspaceFilter(context, { status: { $in: ['pending', 'overdue', 'unpaid'] } })),
     ]);
 
-  const totalAtt = (attendanceData as any[]).length;
-  const presentCount = (attendanceData as any[]).filter((r) => r.status === 'present' || r.status === 'late').length;
-  const attendanceRate = totalAtt > 0 ? Math.round((presentCount / totalAtt) * 100) : 0;
-  const revenueThisMonth = (revenueData as any[]).reduce((sum, t) => sum + (t.amount || 0), 0);
+  const totalAttendance = (attendanceData as any[]).length;
+  const presentCount = (attendanceData as any[]).filter((record) => record.status === 'present' || record.status === 'late').length;
+  const attendanceRate = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0;
+  const revenueThisMonth = (revenueData as any[]).reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
   return { totalStudents, totalClasses, totalTeachers, totalTutorials, activeEnrollments, attendanceRate, revenueThisMonth, pendingPayments };
 }
 
 export async function getTopClasses(limit = 5): Promise<TopClass[]> {
   await connectDB();
+  const context = await requireWorkspaceContext();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const classes = await Class.find({ status: 'active' }).select('id class_name class_code').lean({ virtuals: true });
+  const classes = await Class.find(workspaceFilter(context, { status: 'active' }))
+    .select('id class_name class_code')
+    .lean({ virtuals: true });
 
   const classStats = await Promise.all(
-    (classes as any[]).map(async (cls) => {
-      const [enrollCount, attendance] = await Promise.all([
-        Enrollment.countDocuments({ class_id: cls._id, status: 'active' }),
-        Attendance.find({ class_id: cls._id, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).select('status').lean(),
+    (classes as any[]).map(async (classItem) => {
+      const [enrollmentCount, attendance] = await Promise.all([
+        Enrollment.countDocuments(workspaceFilter(context, { class_id: classItem._id, status: 'active' })),
+        Attendance.find(workspaceFilter(context, {
+          class_id: classItem._id,
+          date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] },
+        })).select('status').lean(),
       ]);
       const total = (attendance as any[]).length;
-      const present = (attendance as any[]).filter((a) => a.status === 'present' || a.status === 'late').length;
+      const present = (attendance as any[]).filter((record) => record.status === 'present' || record.status === 'late').length;
       return {
-        id: cls._id.toString(),
-        class_name: cls.class_name,
-        class_code: cls.class_code,
-        enrollment_count: enrollCount,
+        id: classItem._id.toString(),
+        class_name: classItem.class_name,
+        class_code: classItem.class_code,
+        enrollment_count: enrollmentCount,
         attendance_rate: total > 0 ? Math.round((present / total) * 100) : 0,
       };
     })
   );
 
-  return classStats.sort((a, b) => b.enrollment_count - a.enrollment_count).slice(0, limit);
+  return classStats.sort((a, b) => b.enrollment_count - a.enrollment_count).slice(0, Math.max(1, Math.min(limit, 25)));
 }
 
 export async function getOverduePayments(): Promise<{ payments: OverduePayment[]; total: number }> {
   await connectDB();
+  const context = await requireWorkspaceContext();
   const today = new Date().toISOString().split('T')[0];
 
-  const data = await FeePayment.find({ status: 'pending', due_date: { $lt: today } })
+  const data = await FeePayment.find(workspaceFilter(context, {
+    status: { $in: ['pending', 'overdue'] },
+    due_date: { $lt: today },
+  }))
     .sort({ due_date: 1 })
     .populate('student_id', 'full_name')
     .lean({ virtuals: true });
 
-  const payments = (data as any[]).map((p) => ({
-    student_id: p.student_id?._id?.toString(),
-    student_name: p.student_id?.full_name || 'Unknown',
-    amount: p.amount,
-    due_date: p.due_date,
-    days_overdue: Math.floor((new Date().getTime() - new Date(p.due_date).getTime()) / (1000 * 60 * 60 * 24)),
+  const payments = (data as any[]).map((payment) => ({
+    student_id: payment.student_id?._id?.toString(),
+    student_name: payment.student_id?.full_name || 'Unknown',
+    amount: payment.amount,
+    due_date: payment.due_date,
+    days_overdue: Math.max(0, Math.floor((Date.now() - new Date(payment.due_date).getTime()) / (1000 * 60 * 60 * 24))),
   }));
 
-  const total = payments.reduce((sum, p) => sum + p.amount, 0);
-  return { payments, total };
+  return { payments, total: payments.reduce((sum, payment) => sum + payment.amount, 0) };
 }
