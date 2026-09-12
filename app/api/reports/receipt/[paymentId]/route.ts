@@ -37,9 +37,10 @@ export async function GET(
       headers: {
         'Content-Type': 'text/html',
         'Content-Disposition': `inline; filename="receipt-${paymentId}.html"`,
+        'Cache-Control': 'private, no-store',
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating receipt:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -51,131 +52,106 @@ function generateReceiptHTML(payment: any) {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-LK', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      maximumFractionDigits: 2,
+    }).format(amount);
 
   const receiptNumber = `RCP-${payment._id.toString().slice(-8).toUpperCase()}`;
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Payment Receipt - ${receiptNumber}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Academix receipt ${receiptNumber}</title>
   <style>
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #000; }
-    .receipt { border: 2px solid #000; padding: 30px; }
-    .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 20px; margin-bottom: 20px; }
-    .header h1 { margin: 0; font-size: 28px; }
-    .header p { margin: 5px 0; color: #666; }
-    .receipt-number { background: #000; color: #fff; padding: 10px 20px; display: inline-block; margin-top: 15px; font-weight: bold; }
-    .section { margin: 20px 0; }
-    .section-title { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px; color: #333; }
-    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #eee; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { color: #666; }
-    .detail-value { font-weight: 500; }
-    .amount-section { background: #f9f9f9; padding: 20px; margin: 20px 0; border: 1px solid #eee; }
-    .total-row { display: flex; justify-content: space-between; font-size: 24px; font-weight: bold; }
-    .status-paid { background: #000; color: #fff; padding: 5px 15px; display: inline-block; font-size: 14px; }
-    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; color: #666; font-size: 12px; }
-    @media print { .no-print { display: none; } body { padding: 0; } .receipt { border: none; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f4f5; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #18181b; }
+    .page { max-width: 720px; margin: 0 auto; padding: 48px 20px; }
+    .actions { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .actions button { border: 0; border-radius: 10px; padding: 10px 16px; background: #18181b; color: white; font-weight: 700; cursor: pointer; }
+    .receipt { overflow: hidden; border: 1px solid #e4e4e7; border-radius: 24px; background: white; box-shadow: 0 24px 70px rgba(24,24,27,.08); }
+    .header { padding: 34px 36px 28px; background: #18181b; color: white; }
+    .brand { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+    .header h1 { margin: 12px 0 6px; font-size: 30px; }
+    .header p { margin: 0; color: #d4d4d8; }
+    .receipt-number { display: inline-flex; margin-top: 20px; padding: 7px 11px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .body { padding: 32px 36px; }
+    .section { margin-bottom: 28px; }
+    .section-title { margin-bottom: 10px; color: #71717a; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .detail-row { display: flex; justify-content: space-between; gap: 24px; padding: 10px 0; border-bottom: 1px solid #f4f4f5; font-size: 14px; }
+    .detail-label { color: #71717a; }
+    .detail-value { text-align: right; font-weight: 650; }
+    .amount-section { margin-top: 8px; padding: 22px; border-radius: 16px; background: #f4f4f5; }
+    .total-row { display: flex; justify-content: space-between; gap: 20px; align-items: baseline; font-size: 14px; }
+    .total-row strong { font-size: 28px; letter-spacing: -.03em; }
+    .status-paid { display: inline-flex; margin-top: 12px; padding: 5px 9px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; }
+    .footer { padding: 20px 36px 28px; border-top: 1px solid #f4f4f5; color: #71717a; font-size: 11px; line-height: 1.6; }
+    @media print {
+      body { background: white; }
+      .page { padding: 0; max-width: none; }
+      .actions { display: none; }
+      .receipt { border: 0; border-radius: 0; box-shadow: none; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom: 20px; text-align: center;">
-    <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-      Print / Save as PDF
-    </button>
-  </div>
+  <div class="page">
+    <div class="actions"><button onclick="window.print()">Print / Save PDF</button></div>
+    <article class="receipt">
+      <header class="header">
+        <div class="brand">Academix</div>
+        <h1>Payment receipt</h1>
+        <p>Official record of a completed student payment.</p>
+        <div class="receipt-number">${receiptNumber}</div>
+      </header>
 
-  <div class="receipt">
-    <div class="header">
-      <h1>Student Management System</h1>
-      <p>Payment Receipt</p>
-      <div class="receipt-number">${receiptNumber}</div>
-    </div>
+      <main class="body">
+        <section class="section">
+          <div class="section-title">Student</div>
+          <div class="detail-row"><span class="detail-label">Student code</span><span class="detail-value">${student?.student_code || 'N/A'}</span></div>
+          <div class="detail-row"><span class="detail-label">Student name</span><span class="detail-value">${student?.full_name || 'N/A'}</span></div>
+          ${student?.guardian_name ? `<div class="detail-row"><span class="detail-label">Guardian</span><span class="detail-value">${student.guardian_name}</span></div>` : ''}
+        </section>
 
-    <div class="section">
-      <div class="section-title">Student Information</div>
-      <div class="detail-row">
-        <span class="detail-label">Student Code</span>
-        <span class="detail-value">${student?.student_code || 'N/A'}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Student Name</span>
-        <span class="detail-value">${student?.full_name || 'N/A'}</span>
-      </div>
-      ${student?.guardian_name ? `
-      <div class="detail-row">
-        <span class="detail-label">Guardian</span>
-        <span class="detail-value">${student.guardian_name}</span>
-      </div>
-      ` : ''}
-    </div>
+        ${classInfo ? `<section class="section">
+          <div class="section-title">Class</div>
+          <div class="detail-row"><span class="detail-label">Class</span><span class="detail-value">${classInfo.class_name} (${classInfo.class_code})</span></div>
+          <div class="detail-row"><span class="detail-label">Subject</span><span class="detail-value">${classInfo.subject}</span></div>
+        </section>` : ''}
 
-    ${classInfo ? `
-    <div class="section">
-      <div class="section-title">Class Information</div>
-      <div class="detail-row">
-        <span class="detail-label">Class</span>
-        <span class="detail-value">${classInfo.class_name} (${classInfo.class_code})</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Subject</span>
-        <span class="detail-value">${classInfo.subject}</span>
-      </div>
-    </div>
-    ` : ''}
+        <section class="section">
+          <div class="section-title">Payment details</div>
+          <div class="detail-row"><span class="detail-label">Payment for</span><span class="detail-value">${formatDate(payment.payment_month)}</span></div>
+          <div class="detail-row"><span class="detail-label">Due date</span><span class="detail-value">${formatDate(payment.due_date)}</span></div>
+          <div class="detail-row"><span class="detail-label">Payment date</span><span class="detail-value">${formatDate(payment.payment_date)}</span></div>
+          <div class="detail-row"><span class="detail-label">Method</span><span class="detail-value">${payment.payment_method?.toUpperCase() || 'N/A'}</span></div>
+          ${payment.transaction_id ? `<div class="detail-row"><span class="detail-label">Transaction ID</span><span class="detail-value">${payment.transaction_id}</span></div>` : ''}
+        </section>
 
-    <div class="section">
-      <div class="section-title">Payment Details</div>
-      <div class="detail-row">
-        <span class="detail-label">Payment For</span>
-        <span class="detail-value">${formatDate(payment.payment_month)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Due Date</span>
-        <span class="detail-value">${formatDate(payment.due_date)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Payment Date</span>
-        <span class="detail-value">${formatDate(payment.payment_date)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Payment Method</span>
-        <span class="detail-value">${payment.payment_method?.toUpperCase() || 'N/A'}</span>
-      </div>
-      ${payment.transaction_id ? `
-      <div class="detail-row">
-        <span class="detail-label">Transaction ID</span>
-        <span class="detail-value">${payment.transaction_id}</span>
-      </div>
-      ` : ''}
-    </div>
+        <section class="amount-section">
+          <div class="total-row"><span>Amount paid</span><strong>${formatCurrency(Number(payment.amount))}</strong></div>
+          <span class="status-paid">PAID</span>
+        </section>
+      </main>
 
-    <div class="amount-section">
-      <div class="total-row">
-        <span>Amount Paid</span>
-        <span>${formatCurrency(Number(payment.amount))}</span>
-      </div>
-      <div style="text-align: right; margin-top: 10px;">
-        <span class="status-paid">PAID</span>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>Thank you for your payment!</p>
-      <p>This is a computer-generated receipt and does not require a signature.</p>
-      <p>Generated on ${new Date().toLocaleString()}</p>
-    </div>
+      <footer class="footer">
+        This is a computer-generated receipt. Generated ${new Date().toLocaleString('en-LK')}.
+      </footer>
+    </article>
   </div>
 </body>
-</html>
-  `;
+</html>`;
 }
