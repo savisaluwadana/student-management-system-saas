@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import mongoose from 'mongoose';
 import User, { type IUser } from '@/lib/mongodb/models/User';
 import Workspace from '@/lib/mongodb/models/Workspace';
 import Institute from '@/lib/mongodb/models/Institute';
@@ -10,6 +11,11 @@ import Attendance from '@/lib/mongodb/models/Attendance';
 import Tutorial from '@/lib/mongodb/models/Tutorial';
 import TutorialProgress from '@/lib/mongodb/models/TutorialProgress';
 import ActivityLog from '@/lib/mongodb/models/ActivityLog';
+import Assessment from '@/lib/mongodb/models/Assessment';
+import Grade from '@/lib/mongodb/models/Grade';
+import ClassSession from '@/lib/mongodb/models/ClassSession';
+import NotificationPreference from '@/lib/mongodb/models/NotificationPreference';
+import NotificationLog from '@/lib/mongodb/models/NotificationLog';
 
 function slugify(name: string) {
   const base = name
@@ -61,6 +67,13 @@ export async function migrateLegacyWorkspaceForAdmin(user: IUser) {
     Tutorial.updateMany(scope, { $set: { workspace_id: workspace._id } }),
     TutorialProgress.updateMany(scope, { $set: { workspace_id: workspace._id } }),
     ActivityLog.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    Assessment.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    Grade.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    ClassSession.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    NotificationPreference.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    NotificationLog.updateMany(scope, { $set: { workspace_id: workspace._id } }),
+    // Communications currently use an inline model, so migrate the collection directly.
+    mongoose.connection.collection('communications').updateMany(scope, { $set: { workspace_id: workspace._id } }),
   ]);
 
   const branchCount = await Institute.countDocuments({ workspace_id: workspace._id });
