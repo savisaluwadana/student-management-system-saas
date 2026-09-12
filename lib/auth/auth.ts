@@ -13,6 +13,7 @@ export interface JWTPayload {
   role: 'admin' | 'teacher';
   full_name: string;
   workspace_id?: string | null;
+  auth_version?: number;
 }
 
 export function signToken(payload: JWTPayload): string {
