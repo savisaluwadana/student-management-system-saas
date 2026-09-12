@@ -13,8 +13,8 @@ export interface WorkspaceContext {
 
 /**
  * Resolve request identity against the database, not only the JWT snapshot.
- * This makes deleted users, role changes and suspended workspaces take effect
- * immediately instead of waiting for a seven-day token to expire.
+ * This makes deleted users, role changes, password resets and suspended
+ * workspaces take effect immediately instead of waiting for token expiry.
  */
 export async function requireWorkspaceContext(options?: { admin?: boolean }): Promise<WorkspaceContext> {
   const session = await getCurrentUser();
@@ -22,12 +22,16 @@ export async function requireWorkspaceContext(options?: { admin?: boolean }): Pr
 
   await connectDB();
   const dbUser = await User.findById(session.id)
-    .select('email full_name role workspace_id')
+    .select('email full_name role workspace_id auth_version')
     .lean();
 
   if (!dbUser) throw new Error('Unauthorized');
 
   const userData = dbUser as any;
+  const liveAuthVersion = Number(userData.auth_version || 0);
+  const sessionAuthVersion = Number(session.auth_version || 0);
+  if (sessionAuthVersion !== liveAuthVersion) throw new Error('Unauthorized');
+
   if (options?.admin && userData.role !== 'admin') throw new Error('Forbidden');
 
   const workspaceId = userData.workspace_id?.toString() || null;
@@ -49,6 +53,7 @@ export async function requireWorkspaceContext(options?: { admin?: boolean }): Pr
     role: userData.role,
     full_name: userData.full_name,
     workspace_id: workspaceId,
+    auth_version: liveAuthVersion,
   };
 
   return {
