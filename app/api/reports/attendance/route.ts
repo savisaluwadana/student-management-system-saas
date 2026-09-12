@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb/client';
 import Class from '@/lib/mongodb/models/Class';
 import AttendanceModel from '@/lib/mongodb/models/Attendance';
+import mongoose from 'mongoose';
+import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,48 +14,45 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    if (!classId || !startDate || !endDate) {
-      return NextResponse.json({ error: 'classId, startDate, and endDate are required' }, { status: 400 });
+    if (!classId || !startDate || !endDate || !mongoose.isValidObjectId(classId)) {
+      return NextResponse.json({ error: 'Valid classId, startDate, and endDate are required' }, { status: 400 });
     }
 
     await connectDB();
+    const context = await requireWorkspaceContext();
 
-    const classDoc = await Class.findById(classId).select('class_code class_name subject').lean();
+    const classDoc = await Class.findOne(workspaceFilter(context, { _id: classId }))
+      .select('class_code class_name subject')
+      .lean();
     if (!classDoc) return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-    const c = classDoc as any;
-    const classData = { class_code: c.class_code, class_name: c.class_name, subject: c.subject || '' };
 
-    const attendanceRecords = await AttendanceModel.find({
+    const classData = classDoc as any;
+    const attendanceRecords = await AttendanceModel.find(workspaceFilter(context, {
       class_id: classId,
       date: { $gte: startDate, $lte: endDate },
-    })
+    }))
       .populate('student_id', 'student_code full_name')
       .sort({ date: 1 })
       .lean({ virtuals: true });
 
-    // Process data for report
-    const studentAttendance: Map<string, {
-      code: string;
-      name: string;
-      records: { date: string; status: string }[];
-    }> = new Map();
-
+    const studentAttendance = new Map<string, { code: string; name: string; records: { date: string; status: string }[] }>();
     for (const record of attendanceRecords as any[]) {
       const student = record.student_id;
       if (!student) continue;
-      const key = student.student_code;
-
+      const key = student._id?.toString() || student.student_code;
       if (!studentAttendance.has(key)) {
         studentAttendance.set(key, { code: student.student_code, name: student.full_name, records: [] });
       }
-
       studentAttendance.get(key)!.records.push({ date: record.date, status: record.status });
     }
 
-    const dates = Array.from(new Set((attendanceRecords as any[]).map((r) => r.date))).sort();
-
+    const dates = Array.from(new Set((attendanceRecords as any[]).map((record) => record.date))).sort();
     const html = generateAttendanceReportHTML({
-      classData,
+      classData: {
+        class_code: classData.class_code,
+        class_name: classData.class_name,
+        subject: classData.subject || '',
+      },
       studentAttendance: Array.from(studentAttendance.values()),
       dates,
       startDate,
@@ -62,14 +61,26 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(html, {
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'text/html; charset=utf-8',
         'Content-Disposition': `inline; filename="attendance-report-${classData.class_code}.html"`,
+        'Cache-Control': 'private, no-store',
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     console.error('Error generating attendance report:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function generateAttendanceReportHTML(data: {
@@ -80,124 +91,22 @@ function generateAttendanceReportHTML(data: {
   endDate: string;
 }) {
   const { classData, studentAttendance, dates, startDate, endDate } = data;
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('en-LK', { month: 'short', day: 'numeric' });
+  const symbol = (status: string) => status === 'present' ? '✓' : status === 'absent' ? '✗' : status === 'late' ? 'L' : status === 'excused' ? 'E' : '–';
+  const percentage = (records: { status: string }[]) => {
+    if (!records.length) return 0;
+    return Math.round((records.filter((record) => record.status === 'present' || record.status === 'late').length / records.length) * 100);
   };
+  const average = studentAttendance.length
+    ? Math.round(studentAttendance.reduce((sum, student) => sum + percentage(student.records), 0) / studentAttendance.length)
+    : 0;
 
-  const getStatusSymbol = (status: string) => {
-    switch (status) {
-      case 'present': return '✓';
-      case 'absent': return '✗';
-      case 'late': return 'L';
-      case 'excused': return 'E';
-      default: return '-';
-    }
-  };
-
-  const calculatePercentage = (records: { status: string }[]) => {
-    if (records.length === 0) return 0;
-    const present = records.filter((r) => r.status === 'present' || r.status === 'late').length;
-    return Math.round((present / records.length) * 100);
-  };
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Attendance Report - ${classData.class_name}</title>
-  <style>
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-    .header h1 { margin: 0; font-size: 24px; }
-    .header p { margin: 5px 0; color: #666; }
-    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-    .info-item { text-align: center; }
-    .info-item strong { display: block; font-size: 18px; }
-    .info-item span { color: #666; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #000; color: #fff; }
-    .student-name { text-align: left; min-width: 150px; }
-    .present { color: #000; font-weight: bold; }
-    .absent { color: #000; }
-    .late { color: #666; }
-    .excused { color: #999; }
-    .percentage { font-weight: bold; }
-    .percentage.high { color: #000; }
-    .percentage.medium { color: #666; }
-    .percentage.low { color: #333; background: #f0f0f0; }
-    .legend { margin-top: 20px; display: flex; gap: 20px; justify-content: center; }
-    .legend-item { display: flex; align-items: center; gap: 5px; }
-    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
-    @media print { .no-print { display: none; } body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <div class="no-print" style="margin-bottom: 20px; text-align: center;">
-    <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-      Print / Save as PDF
-    </button>
-  </div>
-
-  <div class="header">
-    <h1>Attendance Report</h1>
-    <p>${classData.class_name} (${classData.class_code})</p>
-    <p>Subject: ${classData.subject}</p>
-    <p>Period: ${formatDate(startDate)} - ${formatDate(endDate)}</p>
-  </div>
-
-  <div class="info-grid">
-    <div class="info-item"><strong>${studentAttendance.length}</strong><span>Total Students</span></div>
-    <div class="info-item"><strong>${dates.length}</strong><span>Days Recorded</span></div>
-    <div class="info-item"><strong>${studentAttendance.length > 0 ? Math.round(studentAttendance.reduce((sum, s) => sum + calculatePercentage(s.records), 0) / studentAttendance.length) : 0}%</strong><span>Average Attendance</span></div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Code</th>
-        <th class="student-name">Student Name</th>
-        ${dates.map((d) => `<th>${formatDate(d)}</th>`).join('')}
-        <th>%</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${studentAttendance.map((student) => {
-        const percentage = calculatePercentage(student.records);
-        const percentageClass = percentage >= 80 ? 'high' : percentage >= 60 ? 'medium' : 'low';
-        return `
-          <tr>
-            <td>${student.code}</td>
-            <td class="student-name">${student.name}</td>
-            ${dates.map((date) => {
-              const record = student.records.find((r) => r.date === date);
-              const status = record?.status || '';
-              return `<td class="${status}">${getStatusSymbol(status)}</td>`;
-            }).join('')}
-            <td class="percentage ${percentageClass}">${percentage}%</td>
-          </tr>
-        `;
-      }).join('')}
-    </tbody>
-  </table>
-
-  <div class="legend">
-    <div class="legend-item"><span class="present">✓</span> Present</div>
-    <div class="legend-item"><span class="absent">✗</span> Absent</div>
-    <div class="legend-item"><span class="late">L</span> Late</div>
-    <div class="legend-item"><span class="excused">E</span> Excused</div>
-    <div class="legend-item"><span>-</span> Not Marked</div>
-  </div>
-
-  <div class="footer">
-    <p>Generated on ${new Date().toLocaleString()}</p>
-    <p>Student Management System</p>
-  </div>
-</body>
-</html>
-  `;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendance report</title><style>
+  *{box-sizing:border-box}body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;margin:0;background:#f4f4f5;color:#18181b}.toolbar{text-align:center;padding:20px}.toolbar button{border:0;border-radius:999px;background:#18181b;color:#fff;padding:11px 18px;font-weight:700}.sheet{width:min(1180px,calc(100% - 32px));margin:0 auto 40px;background:#fff;border:1px solid #e4e4e7;border-radius:22px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.07)}h1{margin:0;font-size:28px}.muted{color:#71717a}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0}.stat{border:1px solid #e4e4e7;border-radius:14px;padding:16px}.stat strong{display:block;font-size:22px}table{width:100%;border-collapse:collapse;font-size:12px;overflow:hidden}th,td{border-bottom:1px solid #e4e4e7;padding:9px;text-align:center}th{background:#18181b;color:#fff}.student{text-align:left;min-width:160px}.code{text-align:left}.pct{font-weight:800}.footer{text-align:center;color:#71717a;font-size:11px;margin-top:24px}@media print{body{background:#fff}.toolbar{display:none}.sheet{width:100%;margin:0;border:0;border-radius:0;box-shadow:none;padding:10px}}
+  </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div><main class="sheet">
+  <h1>Attendance report</h1><p class="muted">${escapeHtml(classData.class_name)} (${escapeHtml(classData.class_code)}) · ${escapeHtml(classData.subject)} · ${escapeHtml(formatDate(startDate))}–${escapeHtml(formatDate(endDate))}</p>
+  <div class="summary"><div class="stat"><strong>${studentAttendance.length}</strong><span class="muted">Students</span></div><div class="stat"><strong>${dates.length}</strong><span class="muted">Recorded days</span></div><div class="stat"><strong>${average}%</strong><span class="muted">Average attendance</span></div></div>
+  <table><thead><tr><th>Code</th><th class="student">Student</th>${dates.map((date) => `<th>${escapeHtml(formatDate(date))}</th>`).join('')}<th>%</th></tr></thead><tbody>
+  ${studentAttendance.map((student) => `<tr><td class="code">${escapeHtml(student.code)}</td><td class="student">${escapeHtml(student.name)}</td>${dates.map((date) => `<td>${escapeHtml(symbol(student.records.find((record) => record.date === date)?.status || ''))}</td>`).join('')}<td class="pct">${percentage(student.records)}%</td></tr>`).join('')}
+  </tbody></table><div class="footer">✓ Present · ✗ Absent · L Late · E Excused · Generated ${escapeHtml(new Date().toLocaleString('en-LK'))}</div></main></body></html>`;
 }
