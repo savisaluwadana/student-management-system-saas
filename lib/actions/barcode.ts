@@ -81,6 +81,11 @@ export async function generateMissingBarcodes() {
   return { success: true, count: updated };
 }
 
+// Backward-compatible action name used by the barcode management screen.
+export async function generateBulkBarcodes() {
+  return generateMissingBarcodes();
+}
+
 export async function findStudentByBarcode(barcode: string) {
   await connectDB();
   const context = await requireWorkspaceContext();
