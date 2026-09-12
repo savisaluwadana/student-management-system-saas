@@ -6,7 +6,10 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const publicRoutes = ['/', '/login', '/signup', '/reset-password', '/docs'];
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/invite/');
+  const isPublicRoute =
+    publicRoutes.includes(pathname) ||
+    pathname.startsWith('/invite/') ||
+    pathname.startsWith('/reset-password/');
 
   if (pathname.startsWith('/api/auth')) {
     return NextResponse.next();

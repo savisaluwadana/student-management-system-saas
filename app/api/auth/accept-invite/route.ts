@@ -4,6 +4,8 @@ import connectDB from '@/lib/mongodb/client';
 import TeamInvite from '@/lib/mongodb/models/TeamInvite';
 import Workspace from '@/lib/mongodb/models/Workspace';
 import User from '@/lib/mongodb/models/User';
+import Class from '@/lib/mongodb/models/Class';
+import ActivityLog from '@/lib/mongodb/models/ActivityLog';
 import { signToken } from '@/lib/auth/auth';
 import { getPlanDefinition } from '@/lib/saas/plans';
 
@@ -33,6 +35,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invite token, full name, and password are required' }, { status: 400 });
     }
 
+    if (fullName.length < 2 || fullName.length > 100) {
+      return NextResponse.json({ error: 'Full name must be between 2 and 100 characters' }, { status: 400 });
+    }
+
     if (password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
@@ -54,6 +60,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This workspace is no longer available' }, { status: 410 });
     }
 
+    if (!['trialing', 'active', 'past_due'].includes(workspace.subscription_status)) {
+      return NextResponse.json({ error: 'This workspace is not accepting new team members' }, { status: 410 });
+    }
+
     const existingUser = await User.findOne({ email: invite.email });
     if (existingUser) {
       return NextResponse.json({ error: 'An account with this email already exists. Sign in instead.' }, { status: 409 });
@@ -69,6 +79,19 @@ export async function POST(request: Request) {
       }
     }
 
+    const assignedClassIds = invite.role === 'teacher' ? invite.class_ids || [] : [];
+    if (assignedClassIds.length > 0) {
+      const validClassCount = await Class.countDocuments({
+        _id: { $in: assignedClassIds },
+        workspace_id: workspace._id,
+      });
+      if (validClassCount !== assignedClassIds.length) {
+        return NextResponse.json({
+          error: 'One or more classes assigned to this invitation are no longer available. Ask an administrator to resend the invitation.',
+        }, { status: 409 });
+      }
+    }
+
     const user = await User.create({
       workspace_id: workspace._id,
       email: invite.email,
@@ -78,6 +101,13 @@ export async function POST(request: Request) {
       role: invite.role,
     });
     createdUserId = user._id.toHexString();
+
+    if (assignedClassIds.length > 0) {
+      await Class.updateMany(
+        { _id: { $in: assignedClassIds }, workspace_id: workspace._id },
+        { teacher_id: user._id }
+      );
+    }
 
     const accepted = await TeamInvite.findOneAndUpdate(
       {
@@ -90,10 +120,25 @@ export async function POST(request: Request) {
     );
 
     if (!accepted) {
+      await Class.updateMany({ teacher_id: user._id }, { $unset: { teacher_id: 1 } });
       await User.findByIdAndDelete(user._id);
       createdUserId = null;
       return NextResponse.json({ error: 'This invitation was already accepted' }, { status: 409 });
     }
+
+    await ActivityLog.create({
+      workspace_id: workspace._id,
+      user_id: user._id,
+      action: 'team.invite.accepted',
+      entity_type: 'teacher',
+      entity_id: user._id.toHexString(),
+      description: `${user.full_name} joined the workspace as ${invite.role}`,
+      metadata: {
+        email: user.email,
+        assigned_classes: assignedClassIds.length,
+        invite_id: invite._id.toHexString(),
+      },
+    }).catch((error) => console.error('Invite acceptance audit log failed:', error));
 
     const tokenValue = signToken({
       id: user._id.toHexString(),
@@ -129,6 +174,7 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     if (createdUserId) {
+      await Class.updateMany({ teacher_id: createdUserId }, { $unset: { teacher_id: 1 } }).catch(() => undefined);
       await User.findByIdAndDelete(createdUserId).catch(() => undefined);
     }
     console.error('Invite acceptance error:', error);

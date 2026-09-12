@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
+import { validateCronAuthorization } from '@/lib/saas/cron';
 import { runFeeGeneration } from '@/lib/saas/jobs';
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authorization = validateCronAuthorization(request);
+    if (!authorization.ok) {
+      return NextResponse.json(
+        { error: authorization.error },
+        { status: authorization.status }
+      );
     }
 
     const { targetMonth } = await request.json().catch(() => ({}));

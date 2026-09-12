@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -28,7 +28,11 @@ import {
 import { createCommunication } from "@/lib/actions/communications"
 import { toast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getClasses } from "@/lib/actions/classes"
+import { getStudents } from "@/lib/actions/students"
+import { Class } from "@/types/class.types"
+import { Student } from "@/types/student.types"
 
 const formSchema = z.object({
     recipient_type: z.enum(["student", "class", "all"]),
@@ -36,13 +40,15 @@ const formSchema = z.object({
     channel: z.enum(["email", "sms", "both"]),
     subject: z.string().min(1, "Subject is required"),
     message: z.string().min(10, "Message must be at least 10 characters"),
+}).superRefine((values, ctx) => {
+    if (values.recipient_type !== 'all' && !values.recipient_id) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['recipient_id'],
+            message: `Select a ${values.recipient_type}.`,
+        })
+    }
 })
-
-import { getClasses } from "@/lib/actions/classes"
-import { getStudents } from "@/lib/actions/students"
-import { Class } from "@/types/class.types"
-import { Student } from "@/types/student.types"
-import { useEffect } from "react"
 
 export function CommunicationForm() {
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,20 +61,26 @@ export function CommunicationForm() {
                 const [classesData, studentsData] = await Promise.all([
                     getClasses('active'),
                     getStudents('active')
-                ]);
-                setClasses(classesData);
-                setStudents(studentsData);
+                ])
+                setClasses(classesData)
+                setStudents(studentsData)
             } catch (error) {
-                console.error("Failed to load recipients", error);
+                console.error("Failed to load recipients", error)
+                toast({
+                    variant: "destructive",
+                    title: "Could not load recipients",
+                    description: "Refresh the page and try again.",
+                })
             }
-        };
-        loadRecipients();
-    }, []);
+        }
+        loadRecipients()
+    }, [])
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             recipient_type: "all",
+            recipient_id: undefined,
             channel: "email",
             subject: "",
             message: "",
@@ -77,12 +89,16 @@ export function CommunicationForm() {
 
     const recipientType = form.watch("recipient_type")
 
+    useEffect(() => {
+        form.setValue('recipient_id', undefined)
+    }, [recipientType, form])
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true)
         try {
             const result = await createCommunication({
                 recipient_type: values.recipient_type,
-                recipient_id: values.recipient_id || null, // Handle 'all' case
+                recipient_id: values.recipient_id || null,
                 channel: values.channel,
                 subject: values.subject,
                 message: values.message,
@@ -90,21 +106,27 @@ export function CommunicationForm() {
 
             if (result.success) {
                 toast({
-                    title: "Message Sent",
-                    description: "Your communication has been successfully sent.",
+                    title: "Message queued",
+                    description: "The communication has been saved as pending for delivery.",
                 })
-                form.reset()
+                form.reset({
+                    recipient_type: 'all',
+                    recipient_id: undefined,
+                    channel: 'email',
+                    subject: '',
+                    message: '',
+                })
             } else {
                 toast({
                     variant: "destructive",
-                    title: "Error",
-                    description: result.error || "Failed to send message.",
+                    title: "Could not queue message",
+                    description: result.error || "Failed to save the communication.",
                 })
             }
         } catch (error) {
             toast({
                 variant: "destructive",
-                title: "Error",
+                title: "Could not queue message",
                 description: "Something went wrong.",
             })
         } finally {
@@ -113,20 +135,20 @@ export function CommunicationForm() {
     }
 
     return (
-        <Card className="border-none shadow-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg ring-1 ring-black/5 dark:ring-white/10">
+        <Card className="border-border/70 bg-card shadow-sm">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5 text-primary" />
-                    New Message
+                    <Send className="h-5 w-5" />
+                    New message
                 </CardTitle>
                 <CardDescription>
-                    Send announcements or notifications
+                    Prepare an email or SMS communication for delivery.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="channel"
@@ -136,7 +158,7 @@ export function CommunicationForm() {
                                         <FormControl>
                                             <Tabs
                                                 onValueChange={field.onChange}
-                                                defaultValue={field.value}
+                                                value={field.value}
                                                 className="w-full"
                                             >
                                                 <TabsList className="grid w-full grid-cols-3">
@@ -161,7 +183,7 @@ export function CommunicationForm() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Recipient</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select who to send to" />
@@ -174,7 +196,7 @@ export function CommunicationForm() {
                                             </SelectContent>
                                         </Select>
                                         <FormDescription>
-                                            {recipientType === 'all' && "Message will be sent to everyone."}
+                                            {recipientType === 'all' && "Queue this for all active students."}
                                             {recipientType === 'class' && "Select a class to target."}
                                             {recipientType === 'student' && "Select a specific student."}
                                         </FormDescription>
@@ -191,16 +213,16 @@ export function CommunicationForm() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Class</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select a class" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {classes.map((cls) => (
-                                                    <SelectItem key={cls.id} value={cls.id}>
-                                                        {cls.class_name} ({cls.class_code})
+                                                {classes.map((classItem) => (
+                                                    <SelectItem key={classItem.id} value={classItem.id}>
+                                                        {classItem.class_name} ({classItem.class_code})
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -218,7 +240,7 @@ export function CommunicationForm() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Student</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select a student" />
@@ -245,7 +267,7 @@ export function CommunicationForm() {
                                 <FormItem>
                                     <FormLabel>Subject</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Announcement Title" {...field} />
+                                        <Input placeholder="Announcement title" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -270,16 +292,16 @@ export function CommunicationForm() {
                             )}
                         />
 
-                        <Button type="submit" className="w-full bg-gradient-to-r from-zinc-800 to-zinc-800 hover:from-zinc-900 hover:to-zinc-900 text-white shadow-lg transition-all duration-300 hover:scale-[1.01]" disabled={isSubmitting}>
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Sending...
+                                    Queuing...
                                 </>
                             ) : (
                                 <>
                                     <Send className="mr-2 h-4 w-4" />
-                                    Send Message
+                                    Queue message
                                 </>
                             )}
                         </Button>

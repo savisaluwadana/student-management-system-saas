@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb/client';
 import User from '@/lib/mongodb/models/User';
+import Workspace from '@/lib/mongodb/models/Workspace';
 import { signToken } from '@/lib/auth/auth';
 import { migrateLegacyWorkspaceForAdmin } from '@/lib/saas/legacy';
 
@@ -19,18 +20,12 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = body || {};
-
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     const user = await User.findOne({ email: String(email).trim().toLowerCase() }).select('+password');
-
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    if (typeof (user as any).password !== 'string' || !(user as any).password) {
+    if (!user || typeof (user as any).password !== 'string' || !(user as any).password) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
@@ -51,12 +46,24 @@ export async function POST(request: Request) {
       workspaceId = migratedWorkspaceId?.toString() || null;
     }
 
+    if (workspaceId) {
+      const workspace = await Workspace.findOne({ _id: workspaceId, status: 'active' }).select('_id');
+      if (!workspace) {
+        return NextResponse.json(
+          { error: 'This workspace is suspended or no longer available. Contact the workspace owner.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    const authVersion = Number(user.auth_version || 0);
     const token = signToken({
       id: user._id.toHexString(),
       email: user.email,
       role: user.role,
       full_name: user.full_name,
       workspace_id: workspaceId,
+      auth_version: authVersion,
     });
 
     const response = NextResponse.json({

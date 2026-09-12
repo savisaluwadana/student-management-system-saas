@@ -9,6 +9,7 @@ import TeamInvite from '@/lib/mongodb/models/TeamInvite';
 import mongoose from 'mongoose';
 import { checkWorkspaceLimit } from '@/lib/actions/billing';
 import { requireWorkspaceContext, workspaceFilter } from '@/lib/saas/workspace';
+import { writeAuditLog } from '@/lib/saas/audit';
 
 export type Teacher = {
   id: string;
@@ -25,6 +26,7 @@ export type PendingTeacherInvite = {
   email: string;
   expires_at: string;
   created_at: string;
+  class_count: number;
 };
 
 export async function getTeachers(): Promise<Teacher[]> {
@@ -73,6 +75,7 @@ export async function getPendingTeacherInvites(): Promise<PendingTeacherInvite[]
     email: invite.email,
     expires_at: new Date(invite.expires_at).toISOString(),
     created_at: new Date(invite.created_at).toISOString(),
+    class_count: Array.isArray(invite.class_ids) ? invite.class_ids.length : 0,
   }));
 }
 
@@ -143,7 +146,7 @@ export async function createTeacher(data: {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await TeamInvite.findOneAndUpdate(
+    const invite = await TeamInvite.findOneAndUpdate(
       {
         workspace_id: context.workspaceObjectId,
         email: normalizedEmail,
@@ -154,14 +157,24 @@ export async function createTeacher(data: {
       {
         token_hash: tokenHash,
         invited_by: context.user.id,
+        class_ids: data.class_ids || [],
         expires_at: expiresAt,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    await writeAuditLog(context, {
+      action: 'team.invite.created',
+      entity_type: 'team_invite',
+      entity_id: invite._id.toHexString(),
+      description: `Invited ${normalizedEmail} to join as a teacher`,
+      metadata: { email: normalizedEmail, class_count: data.class_ids?.length || 0 },
+    });
+
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
     revalidatePath('/teachers');
     revalidatePath('/billing');
+    revalidatePath('/settings');
     return { success: true, invite_url: `${appUrl}/invite/${token}` };
   } catch (error: any) {
     console.error('Error creating teacher invitation:', error);
@@ -185,8 +198,18 @@ export async function revokeTeacherInvite(id: string) {
     { new: true }
   );
   if (!invite) return { success: false, error: 'Invitation not found.' };
+
+  await writeAuditLog(context, {
+    action: 'team.invite.revoked',
+    entity_type: 'team_invite',
+    entity_id: invite._id.toHexString(),
+    description: `Revoked teacher invitation for ${invite.email}`,
+    metadata: { email: invite.email },
+  });
+
   revalidatePath('/teachers');
   revalidatePath('/billing');
+  revalidatePath('/settings');
   return { success: true };
 }
 
@@ -231,7 +254,19 @@ export async function updateTeacher(
       }
     }
 
+    await writeAuditLog(context, {
+      action: 'teacher.updated',
+      entity_type: 'teacher',
+      entity_id: teacher._id.toHexString(),
+      description: `Updated teacher ${teacher.full_name}`,
+      metadata: {
+        email: teacher.email,
+        assigned_classes: data.class_ids?.length,
+      },
+    });
+
     revalidatePath('/teachers');
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     console.error('Error updating teacher:', error);
@@ -250,8 +285,18 @@ export async function deleteTeacher(id: string) {
 
     await Class.updateMany(workspaceFilter(context, { teacher_id: id }), { $unset: { teacher_id: 1 } });
     await User.deleteOne(workspaceFilter(context, { _id: id, role: 'teacher' }));
+
+    await writeAuditLog(context, {
+      action: 'teacher.deleted',
+      entity_type: 'teacher',
+      entity_id: teacher._id.toHexString(),
+      description: `Removed teacher ${teacher.full_name}`,
+      metadata: { email: teacher.email },
+    });
+
     revalidatePath('/teachers');
     revalidatePath('/billing');
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting teacher:', error);

@@ -7,6 +7,7 @@ export interface ITeamInvite extends Document {
   role: 'teacher' | 'admin';
   token_hash: string;
   invited_by: mongoose.Types.ObjectId;
+  class_ids: mongoose.Types.ObjectId[];
   expires_at: Date;
   accepted_at?: Date;
   revoked_at?: Date;
@@ -21,6 +22,7 @@ const TeamInviteSchema = new Schema<ITeamInvite>(
     role: { type: String, enum: ['teacher', 'admin'], default: 'teacher' },
     token_hash: { type: String, required: true, unique: true },
     invited_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    class_ids: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
     expires_at: { type: Date, required: true, index: true },
     accepted_at: { type: Date },
     revoked_at: { type: Date },
