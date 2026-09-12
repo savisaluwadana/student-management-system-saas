@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
@@ -9,6 +8,7 @@ export interface IUser extends Document {
   full_name: string;
   phone?: string;
   role: 'admin' | 'teacher';
+  workspace_id?: mongoose.Types.ObjectId;
   avatar_url?: string;
   created_at: Date;
   updated_at: Date;
@@ -22,6 +22,7 @@ const UserSchema = new Schema<IUser>(
     full_name: { type: String, required: true },
     phone: { type: String },
     role: { type: String, enum: ['admin', 'teacher'], default: 'admin' },
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     avatar_url: { type: String },
   },
   {
@@ -35,7 +36,6 @@ UserSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 
-// Hash password before saving
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 12);
