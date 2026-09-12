@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb/client';
 import User from '@/lib/mongodb/models/User';
+import Workspace from '@/lib/mongodb/models/Workspace';
 import { signToken } from '@/lib/auth/auth';
 import { migrateLegacyWorkspaceForAdmin } from '@/lib/saas/legacy';
 
@@ -49,6 +50,20 @@ export async function POST(request: Request) {
     if (!workspaceId && user.role === 'admin') {
       const migratedWorkspaceId = await migrateLegacyWorkspaceForAdmin(user);
       workspaceId = migratedWorkspaceId?.toString() || null;
+    }
+
+    if (workspaceId) {
+      const workspace = await Workspace.findOne({
+        _id: workspaceId,
+        status: 'active',
+      }).select('_id');
+
+      if (!workspace) {
+        return NextResponse.json(
+          { error: 'This workspace is suspended or no longer available. Contact the workspace owner.' },
+          { status: 403 }
+        );
+      }
     }
 
     const token = signToken({
