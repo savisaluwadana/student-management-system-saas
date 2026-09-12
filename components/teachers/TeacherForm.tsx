@@ -133,10 +133,11 @@ export function TeacherForm({ teacher, trigger, onSuccess }: TeacherFormProps) {
                 return
             }
 
-            if (result.invite_url) {
-                setInviteUrl(result.invite_url)
+            if ('invite_url' in result && result.invite_url) {
+                const url = result.invite_url
+                setInviteUrl(url)
                 try {
-                    await navigator.clipboard.writeText(result.invite_url)
+                    await navigator.clipboard.writeText(url)
                     setCopied(true)
                 } catch {
                     setCopied(false)
