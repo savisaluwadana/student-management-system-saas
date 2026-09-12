@@ -2,12 +2,13 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IFeePayment extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
   class_id?: mongoose.Types.ObjectId;
   amount: number;
   fee_collection_type: 'daily' | 'monthly';
   status: 'pending' | 'paid' | 'overdue' | 'waived' | 'unpaid';
-  payment_month: string; // YYYY-MM-DD (first day of month)
+  payment_month: string;
   due_date?: string;
   payment_date?: string;
   payment_method?: string;
@@ -19,6 +20,7 @@ export interface IFeePayment extends Document {
 
 const FeePaymentSchema = new Schema<IFeePayment>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     student_id: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
     class_id: { type: Schema.Types.ObjectId, ref: 'Class' },
     amount: { type: Number, required: true },
