@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ISession extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   class_id: mongoose.Types.ObjectId;
   name: string;
   start_time: string;
@@ -14,6 +15,7 @@ export interface ISession extends Document {
 
 const SessionSchema = new Schema<ISession>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     class_id: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
     name: { type: String, required: true },
     start_time: { type: String, required: true },
@@ -21,16 +23,10 @@ const SessionSchema = new Schema<ISession>(
     days_of_week: [{ type: String }],
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   },
-  {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-SessionSchema.virtual('id').get(function () {
-  return this._id.toHexString();
-});
+SessionSchema.virtual('id').get(function () { return this._id.toHexString(); });
 
 const Session: Model<ISession> = mongoose.models.Session || mongoose.model<ISession>('Session', SessionSchema);
 export default Session;
