@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface INotificationLog extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   user_id: mongoose.Types.ObjectId;
   type: 'payment' | 'attendance' | 'assessment' | 'enrollment' | 'announcement';
   subject: string;
@@ -13,6 +14,7 @@ export interface INotificationLog extends Document {
 
 const NotificationLogSchema = new Schema<INotificationLog>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     type: { type: String, enum: ['payment', 'attendance', 'assessment', 'enrollment', 'announcement'], required: true },
     subject: { type: String, required: true },
@@ -20,16 +22,10 @@ const NotificationLogSchema = new Schema<INotificationLog>(
     channels: [{ type: String }],
     status: { type: String, enum: ['sent', 'failed', 'pending'], default: 'sent' },
   },
-  {
-    timestamps: { createdAt: 'created_at', updatedAt: false },
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: { createdAt: 'created_at', updatedAt: false }, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-NotificationLogSchema.virtual('id').get(function () {
-  return this._id.toHexString();
-});
+NotificationLogSchema.virtual('id').get(function () { return this._id.toHexString(); });
 
 const NotificationLog: Model<INotificationLog> =
   mongoose.models.NotificationLog ||
