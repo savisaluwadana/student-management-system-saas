@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb/client';
 import User from '@/lib/mongodb/models/User';
 import { signToken } from '@/lib/auth/auth';
+import { migrateLegacyWorkspaceForAdmin } from '@/lib/saas/legacy';
 
 export async function POST(request: Request) {
   try {
@@ -44,7 +45,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const workspaceId = user.workspace_id?.toString() || null;
+    let workspaceId = user.workspace_id?.toString() || null;
+    if (!workspaceId && user.role === 'admin') {
+      const migratedWorkspaceId = await migrateLegacyWorkspaceForAdmin(user);
+      workspaceId = migratedWorkspaceId?.toString() || null;
+    }
+
     const token = signToken({
       id: user._id.toHexString(),
       email: user.email,
