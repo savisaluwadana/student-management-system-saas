@@ -6,6 +6,8 @@ import Workspace from '@/lib/mongodb/models/Workspace';
 import Institute from '@/lib/mongodb/models/Institute';
 import { signToken } from '@/lib/auth/auth';
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function createWorkspaceSlug(name: string) {
   const base = name
     .toLowerCase()
@@ -33,18 +35,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    const { email, password, full_name, workspace_name } = body || {};
+    const normalizedEmail = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body?.password === 'string' ? body.password : '';
+    const fullName = typeof body?.full_name === 'string' ? body.full_name.trim() : '';
+    const requestedWorkspaceName = typeof body?.workspace_name === 'string' ? body.workspace_name.trim() : '';
 
-    if (!email || !password || !full_name) {
+    if (!normalizedEmail || !password || !fullName) {
       return NextResponse.json({ error: 'Email, password, and full name are required' }, { status: 400 });
     }
 
-    if (typeof password !== 'string' || password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+    if (!EMAIL_PATTERN.test(normalizedEmail) || normalizedEmail.length > 254) {
+      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (fullName.length < 2 || fullName.length > 100) {
+      return NextResponse.json({ error: 'Full name must be between 2 and 100 characters' }, { status: 400 });
+    }
+
+    if (password.length < 8 || password.length > 128) {
+      return NextResponse.json({ error: 'Password must be between 8 and 128 characters' }, { status: 400 });
+    }
+
+    const workspaceName = requestedWorkspaceName || `${fullName}'s Institute`;
+    if (workspaceName.length < 2 || workspaceName.length > 120) {
+      return NextResponse.json({ error: 'Workspace name must be between 2 and 120 characters' }, { status: 400 });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail }).select('_id').lean();
     if (existingUser) {
       return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
     }
@@ -52,12 +69,11 @@ export async function POST(request: Request) {
     const user = await User.create({
       email: normalizedEmail,
       password,
-      full_name: String(full_name).trim(),
+      full_name: fullName,
       role: 'admin',
     });
     createdUserId = user._id.toHexString();
 
-    const workspaceName = String(workspace_name || `${full_name}'s Institute`).trim();
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
@@ -120,7 +136,7 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
 
     if (createdWorkspaceId) {
@@ -129,6 +145,10 @@ export async function POST(request: Request) {
     }
     if (createdUserId) {
       await User.findByIdAndDelete(createdUserId).catch(() => undefined);
+    }
+
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
     }
 
     const message = error instanceof Error ? error.message : '';
