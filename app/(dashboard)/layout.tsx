@@ -4,6 +4,11 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { getCurrentUser } from '@/lib/auth/auth';
 
+// Every route in this workspace depends on authenticated request state and/or
+// live MongoDB data. Explicitly opt the route group out of static generation so
+// production builds never need database credentials just to prerender pages.
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
   children,
 }: {
