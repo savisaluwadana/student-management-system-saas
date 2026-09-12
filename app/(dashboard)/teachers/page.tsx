@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/lib/auth/auth';
+import { requireWorkspaceContext } from '@/lib/saas/workspace';
 import { getPendingTeacherInvites, getTeachers } from '@/lib/actions/teachers';
 import { TeacherForm } from '@/components/teachers/TeacherForm';
 import { PendingInvites } from '@/components/teachers/PendingInvites';
@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TeacherTable } from '@/components/teachers/TeacherTable';
 
 export default async function TeachersPage() {
-  const user = await getCurrentUser();
-  const isAdmin = user?.role === 'admin';
+  const context = await requireWorkspaceContext();
+  const isAdmin = context.user.role === 'admin';
   const [teachers, pendingInvites] = await Promise.all([
     getTeachers(),
     isAdmin ? getPendingTeacherInvites() : Promise.resolve([]),
@@ -35,7 +35,7 @@ export default async function TeachersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TeacherTable teachers={teachers} />
+          <TeacherTable teachers={teachers} canManage={isAdmin} />
         </CardContent>
       </Card>
     </div>
