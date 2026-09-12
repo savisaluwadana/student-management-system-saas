@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { getCurrentUser } from '@/lib/auth/auth';
+import { requireWorkspaceContext } from '@/lib/saas/workspace';
 
 // Every route in this workspace depends on authenticated request state and/or
 // live MongoDB data. Explicitly opt the route group out of static generation so
@@ -14,14 +14,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-
-  // Middleware is intentionally lightweight. The server layout is the source of
-  // truth for protected application routes and verifies the signed JWT.
-  if (!user) {
-    redirect('/login');
+  let context;
+  try {
+    context = await requireWorkspaceContext();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (
+      message === 'Unauthorized' ||
+      message === 'Invalid workspace' ||
+      message === 'Workspace unavailable'
+    ) {
+      redirect('/login');
+    }
+    throw error;
   }
 
+  const user = context.user;
   const userForLayout = {
     id: user.id,
     email: user.email,
