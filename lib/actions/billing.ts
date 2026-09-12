@@ -28,7 +28,7 @@ export interface BillingSummary {
 
 export async function getBillingSummary(): Promise<BillingSummary> {
   await connectDB();
-  const context = await requireWorkspaceContext({ admin: true });
+  const context = await requireWorkspaceContext();
 
   const [workspaceDoc, students, teamMembers, branches] = await Promise.all([
     context.workspaceObjectId ? Workspace.findById(context.workspaceObjectId).lean() : Promise.resolve(null),
