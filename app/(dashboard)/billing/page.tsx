@@ -1,24 +1,36 @@
 import { redirect } from 'next/navigation';
-import { Check, CreditCard, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { Check, CreditCard, ShieldCheck, Sparkles, Users, Building2 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth';
+import { getBillingSummary } from '@/lib/actions/billing';
+import { SAAS_PLANS } from '@/lib/saas/plans';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
-const included = [
-  'Up to 500 active students',
-  'Unlimited classes and sessions',
-  'Attendance, assessments and reports',
-  'Payment and overdue tracking',
-  'Email, SMS and WhatsApp workflows',
-  'Multi-branch institute management',
-];
+const formatPrice = (price: number | null) => {
+  if (price === null) return 'Custom';
+  return new Intl.NumberFormat('en-LK', {
+    style: 'currency',
+    currency: 'LKR',
+    maximumFractionDigits: 0,
+  }).format(price);
+};
+
+const usageValue = (current: number, limit: number | null) =>
+  limit === null ? `${current} / Unlimited` : `${current} / ${limit}`;
 
 export default async function BillingPage() {
   const user = await getCurrentUser();
-
   if (!user) redirect('/login');
   if (user.role !== 'admin') redirect('/dashboard');
+
+  const summary = await getBillingSummary();
+  const plan = summary.plan;
+  const statusLabel = summary.workspace.subscription_status === 'trialing'
+    ? 'Professional trial'
+    : summary.workspace.subscription_status === 'legacy'
+      ? 'Legacy workspace'
+      : summary.workspace.subscription_status.replace('_', ' ');
 
   return (
     <div className="space-y-6 py-2">
@@ -30,10 +42,10 @@ export default async function BillingPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Billing & plan</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Understand workspace limits and the capabilities available to your institute.
+            Live plan entitlements and usage for {summary.workspace.name}.
           </p>
         </div>
-        <Badge className="w-fit rounded-full px-3 py-1" variant="secondary">Professional trial</Badge>
+        <Badge className="w-fit rounded-full px-3 py-1 capitalize" variant="secondary">{statusLabel}</Badge>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.25fr_.75fr]">
@@ -42,19 +54,21 @@ export default async function BillingPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  Professional
+                  {plan.name}
                   <Sparkles className="h-4 w-4" />
                 </CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">Built for growing tuition centres and private institutes.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Limits on this page are enforced by student, team and branch creation flows.
+                </p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold tracking-tight">LKR 14,900</div>
-                <div className="text-xs text-muted-foreground">per workspace / month</div>
+                <div className="text-2xl font-bold tracking-tight">{formatPrice(plan.monthlyPriceLkr)}</div>
+                {plan.monthlyPriceLkr !== null && <div className="text-xs text-muted-foreground">per workspace / month</div>}
               </div>
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 p-5 sm:grid-cols-2">
-            {included.map((feature) => (
+            {plan.features.map((feature) => (
               <div key={feature} className="flex items-start gap-2.5 text-sm">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
                   <Check className="h-3 w-3" />
@@ -70,19 +84,50 @@ export default async function BillingPage() {
             <CardTitle className="text-base">Workspace usage</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <Usage label="Students" value="86 / 500" percent={17} icon={Users} />
-            <Usage label="Team members" value="6 / 20" percent={30} icon={ShieldCheck} />
-            <div className="rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-              Usage metering is ready for subscription enforcement. Connect a payment provider before enabling self-service plan changes in production.
-            </div>
+            <Usage
+              label="Students"
+              value={usageValue(summary.usage.students.current, summary.usage.students.limit)}
+              percent={summary.usage.students.percent}
+              icon={Users}
+            />
+            <Usage
+              label="Team members"
+              value={usageValue(summary.usage.teamMembers.current, summary.usage.teamMembers.limit)}
+              percent={summary.usage.teamMembers.percent}
+              icon={ShieldCheck}
+            />
+            <Usage
+              label="Branches"
+              value={usageValue(summary.usage.branches.current, summary.usage.branches.limit)}
+              percent={summary.usage.branches.percent}
+              icon={Building2}
+            />
+            {summary.workspace.trial_ends_at && (
+              <div className="rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+                Trial ends {new Date(summary.workspace.trial_ends_at).toLocaleDateString('en-LK', {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                })}. Payment-provider checkout and webhook activation remain the next billing integration step.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <PlanCard name="Starter" price="LKR 5,900" copy="For small classes getting off spreadsheets." features="50 students · 3 team members" />
-        <PlanCard name="Professional" price="LKR 14,900" copy="For growing education businesses." features="500 students · 20 team members" current />
-        <PlanCard name="Scale" price="Custom" copy="For multi-branch education groups." features="Unlimited scale · SSO · SLA" />
+        {Object.values(SAAS_PLANS).map((item) => (
+          <PlanCard
+            key={item.id}
+            name={item.name}
+            price={formatPrice(item.monthlyPriceLkr)}
+            copy={item.id === 'starter'
+              ? 'For small classes getting off spreadsheets.'
+              : item.id === 'professional'
+                ? 'For growing education businesses.'
+                : 'For larger multi-branch education groups.'}
+            features={`${item.studentLimit ?? 'Unlimited'} students · ${item.teamMemberLimit ?? 'Unlimited'} team members`}
+            current={item.id === summary.workspace.plan}
+          />
+        ))}
       </div>
     </div>
   );
