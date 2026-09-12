@@ -5,10 +5,10 @@ import connectDB from '@/lib/mongodb/client';
 import NotificationPreference from '@/lib/mongodb/models/NotificationPreference';
 import NotificationLog from '@/lib/mongodb/models/NotificationLog';
 import User from '@/lib/mongodb/models/User';
-import { getCurrentUser } from '@/lib/auth/auth';
 import { sendEmail } from '@/lib/services/notifications/email';
 import { sendSms } from '@/lib/services/notifications/sms';
 import { sendWhatsApp } from '@/lib/services/notifications/whatsapp';
+import { requireWorkspaceContext, workspaceFilter, workspaceValue } from '@/lib/saas/workspace';
 
 export interface NotificationPreferenceType {
   id: string;
@@ -38,31 +38,41 @@ export interface UpdateNotificationPreferenceInput {
 
 export async function getNotificationPreferences(): Promise<NotificationPreferenceType | null> {
   await connectDB();
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const context = await requireWorkspaceContext();
 
-  let prefs = await NotificationPreference.findOne({ user_id: user.id }).lean({ virtuals: true });
+  let preferences = await NotificationPreference.findOne(
+    workspaceFilter(context, { user_id: context.user.id })
+  ).lean({ virtuals: true });
 
-  if (!prefs) {
-    const newPrefs = await NotificationPreference.create({ user_id: user.id });
-    return { ...(newPrefs.toObject({ virtuals: true })), id: newPrefs._id.toHexString() } as unknown as NotificationPreferenceType;
+  if (!preferences) {
+    const newPreferences = await NotificationPreference.create({
+      workspace_id: workspaceValue(context),
+      user_id: context.user.id,
+    });
+    return {
+      ...(newPreferences.toObject({ virtuals: true })),
+      id: newPreferences._id.toHexString(),
+    } as unknown as NotificationPreferenceType;
   }
 
-  const p = prefs as any;
-  return { ...p, id: p._id.toString() } as unknown as NotificationPreferenceType;
+  const data = preferences as any;
+  return { ...data, id: data._id.toString() } as unknown as NotificationPreferenceType;
 }
 
 export async function updateNotificationPreferences(
   input: UpdateNotificationPreferenceInput
 ): Promise<{ success: boolean; error?: string }> {
   await connectDB();
-  const user = await getCurrentUser();
-  if (!user) return { success: false, error: 'Unauthorized' };
+  const context = await requireWorkspaceContext();
 
   try {
     await NotificationPreference.findOneAndUpdate(
-      { user_id: user.id },
-      { ...input, updated_at: new Date() },
+      workspaceFilter(context, { user_id: context.user.id }),
+      {
+        ...input,
+        workspace_id: workspaceValue(context),
+        updated_at: new Date(),
+      },
       { upsert: true }
     );
     revalidatePath('/settings');
@@ -79,50 +89,74 @@ export async function sendNotification(
   message: string
 ): Promise<{ success: boolean; error?: string }> {
   await connectDB();
+  const context = await requireWorkspaceContext();
 
-  const prefs = await NotificationPreference.findOne({ user_id: userId }).lean();
-  if (!prefs) return { success: false, error: 'No notification preferences found' };
+  const userData = await User.findOne(workspaceFilter(context, { _id: userId })).select('email phone').lean();
+  if (!userData) return { success: false, error: 'User not found in this workspace' };
 
-  const p = prefs as any;
-  const typeKey = `notify_${type}s` as keyof typeof p;
-  if (!p[typeKey]) return { success: true };
+  let preferences = await NotificationPreference.findOne(
+    workspaceFilter(context, { user_id: userId })
+  ).lean();
 
-  const userData = await User.findById(userId).select('email phone').lean();
-  if (!userData) return { success: false, error: 'User not found' };
-
-  const u = userData as any;
-  const notifications: string[] = [];
-
-  if (p.email_notifications && u.email) {
-    const res = await sendEmail({ to: u.email, subject, message });
-    if (res.success) notifications.push('email');
+  if (!preferences) {
+    preferences = await NotificationPreference.create({
+      workspace_id: workspaceValue(context),
+      user_id: userId,
+    }).then((document) => document.toObject());
   }
 
-  if (p.sms_notifications && u.phone) {
-    const res = await sendSms({ to: u.phone, message });
-    if (res.success) notifications.push('sms');
+  const prefs = preferences as any;
+  const typeKey = `notify_${type}s` as keyof typeof prefs;
+  if (!prefs[typeKey]) return { success: true };
+
+  const user = userData as any;
+  const channels: string[] = [];
+  let attempted = false;
+
+  if (prefs.email_notifications && user.email) {
+    attempted = true;
+    const result = await sendEmail({ to: user.email, subject, message });
+    if (result.success) channels.push('email');
   }
 
-  if (p.whatsapp_notifications && u.phone) {
-    const res = await sendWhatsApp({ to: u.phone, message });
-    if (res.success) notifications.push('whatsapp');
+  if (prefs.sms_notifications && user.phone) {
+    attempted = true;
+    const result = await sendSms({ to: user.phone, message });
+    if (result.success) channels.push('sms');
   }
 
-  if (notifications.length === 0) return { success: true };
+  if (prefs.whatsapp_notifications && user.phone) {
+    attempted = true;
+    const result = await sendWhatsApp({ to: user.phone, message });
+    if (result.success) channels.push('whatsapp');
+  }
 
-  await NotificationLog.create({ user_id: userId, type, subject, message, channels: notifications, status: 'sent' });
-  return { success: true };
+  if (!attempted) return { success: true };
+
+  await NotificationLog.create({
+    workspace_id: workspaceValue(context),
+    user_id: userId,
+    type,
+    subject,
+    message,
+    channels,
+    status: channels.length > 0 ? 'sent' : 'failed',
+  });
+
+  return channels.length > 0
+    ? { success: true }
+    : { success: false, error: 'All enabled notification channels failed' };
 }
 
 export async function getNotificationLogs(limit = 50) {
   await connectDB();
-  const user = await getCurrentUser();
-  if (!user) return [];
+  const context = await requireWorkspaceContext();
+  const safeLimit = Math.max(1, Math.min(limit, 200));
 
-  const logs = await NotificationLog.find({ user_id: user.id })
+  const logs = await NotificationLog.find(workspaceFilter(context, { user_id: context.user.id }))
     .sort({ created_at: -1 })
-    .limit(limit)
+    .limit(safeLimit)
     .lean({ virtuals: true });
 
-  return (logs as any[]).map((l) => ({ ...l, id: l._id.toString() }));
+  return (logs as any[]).map((log) => ({ ...log, id: log._id.toString() }));
 }
