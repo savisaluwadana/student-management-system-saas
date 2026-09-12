@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IClass extends Document {
   _id: mongoose.Types.ObjectId;
+  workspace_id?: mongoose.Types.ObjectId;
   class_code: string;
   class_name: string;
   subject?: string;
@@ -18,6 +19,7 @@ export interface IClass extends Document {
 
 const ClassSchema = new Schema<IClass>(
   {
+    workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', index: true },
     class_code: { type: String, required: true, unique: true },
     class_name: { type: String, required: true },
     subject: { type: String },
