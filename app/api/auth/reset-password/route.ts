@@ -29,6 +29,18 @@ export async function POST(request: Request) {
     }
 
     const userData = user as any;
+    const cooldownStart = new Date(Date.now() - 60 * 1000);
+    const recentRequest = await PasswordResetToken.exists({
+      user_id: userData._id,
+      created_at: { $gte: cooldownStart },
+      used_at: { $exists: false },
+    });
+
+    // Do not disclose whether a cooldown was hit.
+    if (recentRequest) {
+      return NextResponse.json(GENERIC_RESPONSE);
+    }
+
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
